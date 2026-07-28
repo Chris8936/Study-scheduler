@@ -4,6 +4,17 @@ const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
 let supabaseClient = null;
 let sessions = [];
 let currentNotesId = null;
+let currentJoinId = null;
+
+function showToast(message, type) {
+  if (!type) type = "success";
+  const toast = document.getElementById("toast");
+  toast.textContent = message;
+  toast.className = "show " + type;
+  setTimeout(function() {
+    toast.className = "";
+  }, 3000);
+}
 
 function initSupabase() {
   if (window.supabase) {
@@ -25,7 +36,7 @@ async function loadSessions() {
 
   if (error) {
     console.error(error);
-    document.getElementById("sessions").innerHTML = "<p>Error loading sessions</p>";
+    document.getElementById("sessions").innerHTML = "<p class='empty'>Error loading sessions</p>";
     return;
   }
 
@@ -35,7 +46,7 @@ async function loadSessions() {
 
 async function createSession() {
   if (!supabaseClient) {
-    alert("Still connecting... wait 2 seconds and try again");
+    showToast("Still connecting... please wait", "error");
     return;
   }
 
@@ -43,11 +54,10 @@ async function createSession() {
   const timeInput = document.getElementById("session-time").value;
 
   if (!title || !timeInput) {
-    alert("Please enter both a title and a time");
+    showToast("Please enter both a title and a time", "error");
     return;
   }
 
-  // Timezone fix: treat the selected time as local time
   const localDate = new Date(timeInput);
   const isoTime = localDate.toISOString();
 
@@ -61,12 +71,13 @@ async function createSession() {
   ]);
 
   if (error) {
-    alert("Error: " + error.message);
+    showToast("Error: " + error.message, "error");
     return;
   }
 
   document.getElementById("session-title").value = "";
   document.getElementById("session-time").value = "";
+  showToast("Session created successfully");
   loadSessions();
 }
 
@@ -75,21 +86,37 @@ function renderSessions() {
   container.innerHTML = "";
 
   if (sessions.length === 0) {
-    container.innerHTML = "<p>No sessions yet.</p>";
+    container.innerHTML = "<p class='empty'>No sessions yet.<br>Create one above!</p>";
     return;
   }
 
-  sessions.forEach(session => {
+  sessions.forEach(function(session) {
+    let membersHtml = "No one yet";
+    if (session.members && session.members.length > 0) {
+      membersHtml = session.members.map(function(name) {
+        return "• " + name;
+      }).join("<br>");
+    }
+
+    let notesBtnText = "Notes";
+    if (session.notes && session.notes.trim().length > 0) {
+      notesBtnText = "View Notes";
+    }
+
     const div = document.createElement("div");
     div.className = "session-card";
-    div.innerHTML = `
-      <strong>${session.title}</strong><br>
-      Starts: ${new Date(session.time).toLocaleString()}<br>
-      <span class="countdown" id="countdown-${session.id}">Calculating...</span><br>
-      <button onclick="joinSession(${session.id})">Join</button>
-      <button onclick="openNotes(${session.id})">Notes</button>
-      <button onclick="deleteSession(${session.id})">Delete</button>
-    `;
+
+    div.innerHTML =
+      "<strong>" + session.title + "</strong>" +
+      "<div class='meta'>Starts: " + new Date(session.time).toLocaleString() + "</div>" +
+      "<span class='countdown' id='countdown-" + session.id + "'>Calculating...</span>" +
+      "<div class='members'>Members:<br>" + membersHtml + "</div>" +
+      "<div>" +
+        "<button onclick='openJoin(" + session.id + ")'>Join</button>" +
+        "<button onclick='openNotes(" + session.id + ")'>" + notesBtnText + "</button>" +
+        "<button onclick='deleteSession(" + session.id + ")'>Delete</button>" +
+      "</div>";
+
     container.appendChild(div);
   });
 }
@@ -97,8 +124,8 @@ function renderSessions() {
 function updateCountdowns() {
   const now = new Date();
 
-  sessions.forEach(session => {
-    const el = document.getElementById(`countdown-${session.id}`);
+  sessions.forEach(function(session) {
+    const el = document.getElementById("countdown-" + session.id);
     if (!el) return;
 
     const target = new Date(session.time);
@@ -111,40 +138,68 @@ function updateCountdowns() {
       const hours = Math.floor(diff / (1000 * 60 * 60));
       const mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
       const secs = Math.floor((diff % (1000 * 60)) / 1000);
-      el.textContent = `Starts in: ${hours}h ${mins}m ${secs}s`;
+      el.textContent = "Starts in: " + hours + "h " + mins + "m " + secs + "s";
       el.style.color = "#f87171";
     }
   });
 }
 
-async function joinSession(id) {
-  if (!supabaseClient) return;
+function openJoin(id) {
+  currentJoinId = id;
+  document.getElementById("join-name").value = "";
+  document.getElementById("join-error").style.display = "none";
+  document.getElementById("join-modal").style.display = "block";
+}
 
-  const session = sessions.find(s => s.id === id);
+function closeJoin() {
+  document.getElementById("join-modal").style.display = "none";
+  currentJoinId = null;
+}
+
+async function confirmJoin() {
+  if (!supabaseClient || !currentJoinId) return;
+
+  const name = document.getElementById("join-name").value.trim();
+  const errorEl = document.getElementById("join-error");
+
+  if (!name) {
+    errorEl.textContent = "Please enter your name.";
+    errorEl.style.display = "block";
+    return;
+  }
+
+  const session = sessions.find(function(s) {
+    return s.id === currentJoinId;
+  });
   if (!session) return;
 
-  const name = prompt("Enter your name:");
-  if (!name) return;
-
   let members = session.members || [];
-  if (!members.includes(name)) {
-    members.push(name);
+  const nameExists = members.some(function(m) {
+    return m.toLowerCase() === name.toLowerCase();
+  });
 
-    const { error } = await supabaseClient
-      .from("sessions")
-      .update({ members: members })
-      .eq("id", id);
-
-    if (error) {
-      alert("Error joining: " + error.message);
-      return;
-    }
-
-    alert("Joined! Members: " + members.join(", "));
-    loadSessions();
-  } else {
-    alert("You already joined.");
+  if (nameExists) {
+    errorEl.textContent = '"' + name + '" is already in this session.';
+    errorEl.style.display = "block";
+    return;
   }
+
+  members.push(name);
+
+  const { error } = await supabaseClient
+    .from("sessions")
+    .update({ members: members })
+    .eq("id", currentJoinId);
+
+  if (error) {
+    errorEl.textContent = "Error joining: " + error.message;
+    errorEl.style.display = "block";
+    return;
+  }
+
+  closeJoin();
+  showToast("Joined successfully");
+  loadSessions();
 }
 
 async function deleteSession(id) {
@@ -157,15 +212,18 @@ async function deleteSession(id) {
     .eq("id", id);
 
   if (error) {
-    alert("Error deleting: " + error.message);
+    showToast("Error deleting session", "error");
     return;
   }
 
+  showToast("Session deleted");
   loadSessions();
 }
 
 function openNotes(id) {
-  const session = sessions.find(s => s.id === id);
+  const session = sessions.find(function(s) {
+    return s.id === id;
+  });
   if (!session) return;
 
   currentNotesId = id;
@@ -185,12 +243,12 @@ async function saveNotes() {
     .eq("id", currentNotesId);
 
   if (error) {
-    alert("Error saving notes: " + error.message);
+    showToast("Error saving notes", "error");
     return;
   }
 
   closeNotes();
-  alert("Notes saved!");
+  showToast("Notes saved successfully");
   loadSessions();
 }
 
@@ -201,6 +259,6 @@ function closeNotes() {
 
 initSupabase();
 setInterval(updateCountdowns, 1000);
-setInterval(() => {
+setInterval(function() {
   if (supabaseClient) loadSessions();
 }, 10000);
