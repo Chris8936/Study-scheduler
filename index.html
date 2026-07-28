@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Study Scheduler</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #0f0f0f;
+      color: #e5e5e5;
+      padding: 20px 16px;
+      margin: 0;
+      line-height: 1.5;
+    }
+    h1 {
+      font-size: 1.8rem;
+      margin-bottom: 24px;
+      text-align: center;
+      color: #ffffff;
+    }
+    h2 {
+      font-size: 1.2rem;
+      margin: 28px 0 12px;
+      color: #a3a3a3;
+    }
+    input, textarea {
+      width: 100%;
+      background: #1c1c1c;
+      color: #fff;
+      border: 1px solid #333;
+      padding: 12px 14px;
+      border-radius: 10px;
+      font-size: 16px;
+      margin-bottom: 10px;
+    }
+    input:focus, textarea:focus {
+      outline: none;
+      border-color: #3b82f6;
+    }
+    button {
+      background: #3b82f6;
+      color: white;
+      border: none;
+      padding: 10px 16px;
+      border-radius: 8px;
+      font-size: 15px;
+      font-weight: 500;
+      margin-right: 8px;
+      margin-top: 4px;
+    }
+    button:active { background: #2563eb; }
+    .session-card {
+      background: #1a1a1a;
+      border: 1px solid #2a2a2a;
+      padding: 16px;
+      border-radius: 14px;
+      margin-bottom: 14px;
+    }
+    .session-card strong {
+      font-size: 1.15rem;
+      color: #fff;
+    }
+    .countdown {
+      display: inline-block;
+      margin: 8px 0;
+      font-weight: 600;
+    }
+    #notes-modal {
+      display: none;
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: rgba(0,0,0,0.88);
+      z-index: 100;
+      padding: 20px;
+    }
+    .notes-content {
+      background: #1a1a1a;
+      padding: 24px;
+      border-radius: 16px;
+      max-width: 500px;
+      margin: 60px auto 0;
+      border: 1px solid #333;
+    }
+    .notes-content h3 {
+      margin-top: 0;
+      margin-bottom: 16px;
+      color: #fff;
+    }
+    textarea {
+      min-height: 140px;
+      resize: vertical;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Study Scheduler</h1>
+
+  <h2>Create Study Session</h2>
+  <input type="text" id="session-title" placeholder="Session title (e.g. Maths)">
+  <input type="datetime-local" id="session-time">
+  <br>
+  <button onclick="createSession()">Create Session</button>
+
+  <h2>Upcoming Sessions</h2>
+  <div id="sessions"><p>Loading...</p></div>
+
+  <div id="notes-modal">
+    <div class="notes-content">
+      <h3 id="notes-title">Session Notes</h3>
+      <textarea id="notes-text" rows="8" placeholder="Write shared notes here..."></textarea>
+      <br>
+      <button onclick="saveNotes()">Save Notes</button>
+      <button onclick="closeNotes()">Close</button>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
