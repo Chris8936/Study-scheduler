@@ -79,6 +79,17 @@
       color: #86efac;
       line-height: 1.6;
     }
+    .notes-preview {
+      margin-top: 10px;
+      padding: 10px 12px;
+      background: #141414;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      color: #bbb;
+      border-left: 3px solid #3b82f6;
+      max-height: 60px;
+      overflow: hidden;
+    }
     .modal {
       display: none;
       position: fixed;
@@ -86,34 +97,58 @@
       width: 100%; height: 100%;
       background: rgba(0,0,0,0.88);
       z-index: 100;
-      padding: 20px;
+      padding: 16px;
+      overflow-y: auto;
     }
     .modal-content {
       background: #1a1a1a;
-      padding: 24px;
+      padding: 20px;
       border-radius: 16px;
-      max-width: 420px;
-      margin: 60px auto 0;
+      max-width: 500px;
+      margin: 40px auto 0;
       border: 1px solid #333;
     }
     .modal-content h3 {
       margin-top: 0;
-      margin-bottom: 16px;
+      margin-bottom: 8px;
       color: #fff;
       font-size: 1.25rem;
     }
-    #notes-text {
+    .last-updated {
+      font-size: 0.85rem;
+      color: #888;
+      margin-bottom: 12px;
+    }
+    .toolbar {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 10px;
+      flex-wrap: wrap;
+    }
+    .toolbar button {
+      background: #2a2a2a;
+      padding: 6px 12px;
+      font-size: 13px;
+      margin: 0;
+    }
+    .toolbar button:active {
+      background: #3b82f6;
+    }
+    /* Rich text editor */
+    #notes-editor {
       background: #141414;
       border: 1px solid #2e2e2e;
       border-radius: 12px;
       padding: 16px;
-      min-height: 220px;
+      min-height: 240px;
       font-size: 16px;
       line-height: 1.6;
-      resize: vertical;
       color: #e5e5e5;
+      outline: none;
+      overflow-y: auto;
     }
-    #notes-text::placeholder {
+    #notes-editor:empty:before {
+      content: "Write shared notes here...";
       color: #666;
     }
     .empty {
@@ -183,7 +218,16 @@
   <div id="notes-modal" class="modal">
     <div class="modal-content">
       <h3 id="notes-title">Session Notes</h3>
-      <textarea id="notes-text" placeholder="Write shared notes here..."></textarea>
+      <div class="last-updated" id="notes-updated">Last updated: —</div>
+
+      <div class="toolbar">
+        <button type="button" onclick="formatNotes('bold')"><b>B</b></button>
+        <button type="button" onclick="formatNotes('italic')"><i>I</i></button>
+        <button type="button" onclick="formatNotes('underline')"><u>U</u></button>
+        <button type="button" onclick="formatNotes('list')">• List</button>
+      </div>
+
+      <div id="notes-editor" contenteditable="true"></div>
       <br>
       <button onclick="saveNotes()">Save Notes</button>
       <button class="btn-cancel" onclick="closeNotes()">Close</button>

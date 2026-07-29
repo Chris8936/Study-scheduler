@@ -28,16 +28,14 @@ function initSupabase() {
   }
 }
 
-// ===== Realtime =====
 function setupRealtime() {
   supabaseClient
     .channel("sessions-changes")
     .on(
       "postgres_changes",
       { event: "*", schema: "public", table: "sessions" },
-      function(payload) {
-        console.log("Realtime update received");
-        loadSessions(); // Refresh the list immediately
+      function() {
+        loadSessions();
       }
     )
     .subscribe();
@@ -95,7 +93,6 @@ async function createSession() {
   document.getElementById("session-title").value = "";
   document.getElementById("session-time").value = "";
   showToast("Session created successfully");
-  // No need to call loadSessions() – Realtime will handle it
 }
 
 function renderSessions() {
@@ -116,8 +113,16 @@ function renderSessions() {
     }
 
     let notesBtnText = "Notes";
+    let notesPreview = "";
+
     if (session.notes && session.notes.trim().length > 0) {
       notesBtnText = "View Notes";
+      // Strip HTML for preview
+      const temp = document.createElement("div");
+      temp.innerHTML = session.notes;
+      const plain = temp.textContent || temp.innerText || "";
+      const preview = plain.trim().substring(0, 80);
+      notesPreview = "<div class='notes-preview'>" + preview + (plain.length > 80 ? "..." : "") + "</div>";
     }
 
     const div = document.createElement("div");
@@ -128,6 +133,7 @@ function renderSessions() {
       "<div class='meta'>Starts: " + new Date(session.time).toLocaleString() + "</div>" +
       "<span class='countdown' id='countdown-" + session.id + "'>Calculating...</span>" +
       "<div class='members'>Members:<br>" + membersHtml + "</div>" +
+      notesPreview +
       "<div>" +
         "<button onclick='openJoin(" + session.id + ")'>Join</button>" +
         "<button onclick='openNotes(" + session.id + ")'>" + notesBtnText + "</button>" +
@@ -216,7 +222,6 @@ async function confirmJoin() {
 
   closeJoin();
   showToast("Joined successfully");
-  // Realtime will update the list for everyone
 }
 
 function openDelete(id) {
@@ -255,14 +260,22 @@ function openNotes(id) {
 
   currentNotesId = id;
   document.getElementById("notes-title").textContent = "Notes – " + session.title;
-  document.getElementById("notes-text").value = session.notes || "";
+  document.getElementById("notes-editor").innerHTML = session.notes || "";
+
+  if (session.created_at) {
+    document.getElementById("notes-updated").textContent =
+      "Last updated: " + new Date(session.created_at).toLocaleString();
+  } else {
+    document.getElementById("notes-updated").textContent = "Last updated: —";
+  }
+
   document.getElementById("notes-modal").style.display = "block";
 }
 
 async function saveNotes() {
   if (!supabaseClient) return;
 
-  const notes = document.getElementById("notes-text").value;
+  const notes = document.getElementById("notes-editor").innerHTML;
 
   const { error } = await supabaseClient
     .from("sessions")
@@ -281,6 +294,11 @@ async function saveNotes() {
 function closeNotes() {
   document.getElementById("notes-modal").style.display = "none";
   currentNotesId = null;
+}
+
+function formatNotes(command) {
+  document.execCommand(command, false, null);
+  document.getElementById("notes-editor").focus();
 }
 
 initSupabase();
