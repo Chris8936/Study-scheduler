@@ -241,12 +241,20 @@ function renderSessions() {
     return;
   }
 
+  const currentName = (currentUser && currentUser.user_metadata && currentUser.user_metadata.name) || "";
+
   sessions.forEach(function(session) {
     let membersHtml = "No one yet";
+    let isMember = false;
+
     if (session.members && session.members.length > 0) {
       membersHtml = session.members.map(function(name) {
         return "• " + name;
       }).join("<br>");
+
+      isMember = session.members.some(function(m) {
+        return m.toLowerCase() === currentName.toLowerCase();
+      });
     }
 
     let notesBtnText = "Notes";
@@ -261,6 +269,16 @@ function renderSessions() {
       notesPreview = "<div class='notes-preview'>" + preview + (plain.length > 80 ? "..." : "") + "</div>";
     }
 
+    // Action buttons
+    let actionButtons = "<button onclick='openJoin(" + session.id + ")'>Join</button>";
+
+    if (isMember) {
+      actionButtons += "<button onclick='leaveSession(" + session.id + ")' style='background:#64748b;'>Leave</button>";
+    }
+
+    actionButtons += "<button onclick='openNotes(" + session.id + ")'>" + notesBtnText + "</button>";
+    actionButtons += "<button onclick='openDelete(" + session.id + ")'>Delete</button>";
+
     const div = document.createElement("div");
     div.className = "session-card";
 
@@ -270,11 +288,7 @@ function renderSessions() {
       "<span class='countdown' id='countdown-" + session.id + "'>Calculating...</span>" +
       "<div class='members'>Members:<br>" + membersHtml + "</div>" +
       notesPreview +
-      "<div class='card-actions'>" +
-        "<button onclick='openJoin(" + session.id + ")'>Join</button>" +
-        "<button onclick='openNotes(" + session.id + ")'>" + notesBtnText + "</button>" +
-        "<button onclick='openDelete(" + session.id + ")'>Delete</button>" +
-      "</div>";
+      "<div class='card-actions'>" + actionButtons + "</div>";
 
     container.appendChild(div);
   });
@@ -359,6 +373,38 @@ async function confirmJoin() {
 
   closeJoin();
   showToast("Joined successfully");
+}
+
+async function leaveSession(id) {
+  if (!supabaseClient || !currentUser) return;
+
+  const currentName = (currentUser.user_metadata && currentUser.user_metadata.name) || "";
+  if (!currentName) {
+    showToast("Could not find your name", "error");
+    return;
+  }
+
+  const session = sessions.find(function(s) {
+    return s.id === id;
+  });
+  if (!session) return;
+
+  let members = session.members || [];
+  members = members.filter(function(m) {
+    return m.toLowerCase() !== currentName.toLowerCase();
+  });
+
+  const { error } = await supabaseClient
+    .from("sessions")
+    .update({ members: members })
+    .eq("id", id);
+
+  if (error) {
+    showToast("Error leaving session", "error");
+    return;
+  }
+
+  showToast("You left the session");
 }
 
 function openDelete(id) {
