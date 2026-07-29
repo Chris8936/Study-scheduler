@@ -6,6 +6,8 @@ let sessions = [];
 let currentNotesId = null;
 let currentJoinId = null;
 let currentDeleteId = null;
+let currentUser = null;
+let realtimeReady = false;
 
 function showToast(message, type) {
   if (!type) type = "success";
@@ -17,18 +19,155 @@ function showToast(message, type) {
   }, 3000);
 }
 
-function initSupabase() {
+function togglePassword(inputId, btn) {
+  const input = document.getElementById(inputId);
+  if (input.type === "password") {
+    input.type = "text";
+    btn.textContent = "🙈";
+  } else {
+    input.type = "password";
+    btn.textContent = "👁";
+  }
+}
+
+function updateThemeIcons(isLight) {
+  const icon1 = document.getElementById("theme-icon");
+  const icon2 = document.getElementById("theme-icon-auth");
+  const icon = isLight ? "☀️" : "🌙";
+  if (icon1) icon1.textContent = icon;
+  if (icon2) icon2.textContent = icon;
+}
+
+function toggleTheme() {
+  document.body.classList.toggle("light");
+  const isLight = document.body.classList.contains("light");
+  updateThemeIcons(isLight);
+  localStorage.setItem("theme", isLight ? "light" : "dark");
+}
+
+function showLogin() {
+  document.getElementById("login-form").style.display = "block";
+  document.getElementById("signup-form").style.display = "none";
+}
+
+function showSignup() {
+  document.getElementById("login-form").style.display = "none";
+  document.getElementById("signup-form").style.display = "block";
+}
+
+function showApp() {
+  document.getElementById("auth-screen").style.display = "none";
+  document.getElementById("app-screen").style.display = "block";
+
+  // Show name instead of email
+  const name = (currentUser && currentUser.user_metadata && currentUser.user_metadata.name)
+    ? currentUser.user_metadata.name
+    : (currentUser ? currentUser.email : "User");
+
+  document.getElementById("user-name").textContent = "Hi, " + name;
+
+  loadSessions();
+  setupRealtime();
+}
+
+function showAuth() {
+  document.getElementById("auth-screen").style.display = "block";
+  document.getElementById("app-screen").style.display = "none";
+}
+
+async function initSupabase() {
+  // Load saved theme
+  if (localStorage.getItem("theme") === "light") {
+    document.body.classList.add("light");
+    updateThemeIcons(true);
+  }
+
   if (window.supabase) {
     supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
     console.log("Supabase connected");
-    loadSessions();
-    setupRealtime();
+
+    const { data: { session } } = await supabaseClient.auth.getSession();
+    if (session) {
+      currentUser = session.user;
+      showApp();
+    } else {
+      showAuth();
+    }
+
+    supabaseClient.auth.onAuthStateChange(function(event, session) {
+      if (session) {
+        currentUser = session.user;
+        showApp();
+      } else {
+        currentUser = null;
+        showAuth();
+      }
+    });
   } else {
     setTimeout(initSupabase, 400);
   }
 }
 
+async function signup() {
+  const name = document.getElementById("signup-name").value.trim();
+  const email = document.getElementById("signup-email").value.trim();
+  const password = document.getElementById("signup-password").value;
+
+  if (!name || !email || !password) {
+    showToast("Please fill all fields", "error");
+    return;
+  }
+  if (password.length < 6) {
+    showToast("Password must be at least 6 characters", "error");
+    return;
+  }
+
+  const { error } = await supabaseClient.auth.signUp({
+    email: email,
+    password: password,
+    options: { data: { name: name } }
+  });
+
+  if (error) {
+    showToast(error.message, "error");
+    return;
+  }
+
+  showToast("Account created! You can now login.");
+  showLogin();
+}
+
+async function login() {
+  const email = document.getElementById("login-email").value.trim();
+  const password = document.getElementById("login-password").value;
+
+  if (!email || !password) {
+    showToast("Please enter email and password", "error");
+    return;
+  }
+
+  const { error } = await supabaseClient.auth.signInWithPassword({
+    email: email,
+    password: password
+  });
+
+  if (error) {
+    showToast(error.message, "error");
+    return;
+  }
+
+  showToast("Logged in successfully");
+}
+
+async function logout() {
+  await supabaseClient.auth.signOut();
+  showToast("Logged out");
+}
+
 function setupRealtime() {
+  if (realtimeReady || !supabaseClient) return;
+  realtimeReady = true;
+
   supabaseClient
     .channel("sessions-changes")
     .on(
@@ -117,7 +256,6 @@ function renderSessions() {
 
     if (session.notes && session.notes.trim().length > 0) {
       notesBtnText = "View Notes";
-      // Strip HTML for preview
       const temp = document.createElement("div");
       temp.innerHTML = session.notes;
       const plain = temp.textContent || temp.innerText || "";
@@ -169,7 +307,8 @@ function updateCountdowns() {
 
 function openJoin(id) {
   currentJoinId = id;
-  document.getElementById("join-name").value = "";
+  const name = (currentUser && currentUser.user_metadata && currentUser.user_metadata.name) || "";
+  document.getElementById("join-name").value = name;
   document.getElementById("join-error").style.display = "none";
   document.getElementById("join-modal").style.display = "block";
 }
