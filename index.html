@@ -111,7 +111,7 @@
 
     .auth-hero {
       text-align: center;
-      margin-bottom: 28px;
+      margin-bottom: 24px;
     }
     .auth-hero h1 {
       font-size: 1.85rem;
@@ -126,10 +126,37 @@
       font-weight: 500;
       color: var(--text);
     }
-    .auth-hero .sub-tagline {
-      margin-top: 6px;
+
+    /* Feature list (styled like the image) */
+    .feature-list {
+      margin: 28px 0 32px;
+      display: flex;
+      flex-direction: column;
+      gap: 22px;
+    }
+    .feature-item {
+      display: flex;
+      gap: 14px;
+      align-items: flex-start;
+    }
+    .feature-number {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--accent);
+      opacity: 0.9;
+      min-width: 28px;
+      padding-top: 2px;
+    }
+    .feature-content h3 {
+      font-size: 1.05rem;
+      font-weight: 600;
+      margin-bottom: 4px;
+      color: var(--text);
+    }
+    .feature-content p {
+      font-size: 0.9rem;
       color: var(--muted);
-      font-size: 0.93rem;
+      line-height: 1.45;
     }
 
     .auth-card {
@@ -474,7 +501,25 @@
       <div class="auth-hero">
         <h1>Study smarter.<br><span class="blue">Sync together.</span></h1>
         <p class="tagline">StudySched: Plan less. Achieve more.</p>
-        <p class="sub-tagline">Own your time, master your grades.</p>
+      </div>
+
+      <!-- Feature list -->
+      <div class="feature-list">
+        <div class="feature-item">
+          <div class="feature-number">01</div>
+          <div class="feature-content">
+            <h3>Plan with Intent</h3>
+            <p>Build schedules that turn big academic goals into clear next moves.</p>
+          </div>
+        </div>
+
+        <div class="feature-item">
+          <div class="feature-number">02</div>
+          <div class="feature-content">
+            <h3>Learn together</h3>
+            <p>Find your people, join focused groups, and keep momentum visible.</p>
+          </div>
+        </div>
       </div>
 
       <div class="auth-card">
