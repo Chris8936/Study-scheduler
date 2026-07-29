@@ -5,6 +5,7 @@ let supabaseClient = null;
 let sessions = [];
 let currentNotesId = null;
 let currentJoinId = null;
+let currentDeleteId = null;
 
 function showToast(message, type) {
   if (!type) type = "success";
@@ -114,7 +115,7 @@ function renderSessions() {
       "<div>" +
         "<button onclick='openJoin(" + session.id + ")'>Join</button>" +
         "<button onclick='openNotes(" + session.id + ")'>" + notesBtnText + "</button>" +
-        "<button onclick='deleteSession(" + session.id + ")'>Delete</button>" +
+        "<button onclick='openDelete(" + session.id + ")'>Delete</button>" +
       "</div>";
 
     container.appendChild(div);
@@ -202,20 +203,31 @@ async function confirmJoin() {
   loadSessions();
 }
 
-async function deleteSession(id) {
-  if (!supabaseClient) return;
-  if (!confirm("Delete this session?")) return;
+function openDelete(id) {
+  currentDeleteId = id;
+  document.getElementById("delete-modal").style.display = "block";
+}
+
+function closeDelete() {
+  document.getElementById("delete-modal").style.display = "none";
+  currentDeleteId = null;
+}
+
+async function confirmDelete() {
+  if (!supabaseClient || !currentDeleteId) return;
 
   const { error } = await supabaseClient
     .from("sessions")
     .delete()
-    .eq("id", id);
+    .eq("id", currentDeleteId);
 
   if (error) {
     showToast("Error deleting session", "error");
+    closeDelete();
     return;
   }
 
+  closeDelete();
   showToast("Session deleted");
   loadSessions();
 }
