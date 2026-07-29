@@ -22,9 +22,25 @@ function initSupabase() {
     supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
     console.log("Supabase connected");
     loadSessions();
+    setupRealtime();
   } else {
     setTimeout(initSupabase, 400);
   }
+}
+
+// ===== Realtime =====
+function setupRealtime() {
+  supabaseClient
+    .channel("sessions-changes")
+    .on(
+      "postgres_changes",
+      { event: "*", schema: "public", table: "sessions" },
+      function(payload) {
+        console.log("Realtime update received");
+        loadSessions(); // Refresh the list immediately
+      }
+    )
+    .subscribe();
 }
 
 async function loadSessions() {
@@ -79,7 +95,7 @@ async function createSession() {
   document.getElementById("session-title").value = "";
   document.getElementById("session-time").value = "";
   showToast("Session created successfully");
-  loadSessions();
+  // No need to call loadSessions() – Realtime will handle it
 }
 
 function renderSessions() {
@@ -200,7 +216,7 @@ async function confirmJoin() {
 
   closeJoin();
   showToast("Joined successfully");
-  loadSessions();
+  // Realtime will update the list for everyone
 }
 
 function openDelete(id) {
@@ -229,7 +245,6 @@ async function confirmDelete() {
 
   closeDelete();
   showToast("Session deleted");
-  loadSessions();
 }
 
 function openNotes(id) {
@@ -261,7 +276,6 @@ async function saveNotes() {
 
   closeNotes();
   showToast("Notes saved successfully");
-  loadSessions();
 }
 
 function closeNotes() {
@@ -271,6 +285,3 @@ function closeNotes() {
 
 initSupabase();
 setInterval(updateCountdowns, 1000);
-setInterval(function() {
-  if (supabaseClient) loadSessions();
-}, 10000);
