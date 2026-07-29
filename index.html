@@ -7,49 +7,149 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     :root {
-      --bg: #0f0f0f;
-      --card: #1a1a1a;
-      --input: #1c1c1c;
-      --text: #e5e5e5;
-      --muted: #a3a3a3;
-      --border: #333;
+      --bg: #070b14;
+      --card: #0f1623;
+      --input: #141c2b;
+      --text: #e8eef7;
+      --muted: #8b9bb4;
+      --border: #1e2a3d;
       --primary: #3b82f6;
+      --primary-glow: rgba(59, 130, 246, 0.25);
       --danger: #ef4444;
       --success: #22c55e;
+      --accent: #60a5fa;
     }
 
     body.light {
-      --bg: #f4f6f8;
+      --bg: #f1f5f9;
       --card: #ffffff;
       --input: #ffffff;
-      --text: #111111;
-      --muted: #666666;
-      --border: #e0e0e0;
+      --text: #0f172a;
+      --muted: #64748b;
+      --border: #e2e8f0;
       --primary: #2563eb;
+      --primary-glow: rgba(37, 99, 235, 0.15);
       --danger: #dc2626;
       --success: #16a34a;
+      --accent: #3b82f6;
     }
 
-    * { box-sizing: border-box; }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
       background: var(--bg);
       color: var(--text);
-      padding: 16px;
-      margin: 0;
+      min-height: 100vh;
       line-height: 1.5;
-      transition: background 0.25s, color 0.25s;
+      transition: background 0.3s, color 0.3s;
     }
-    h1 {
-      font-size: 1.7rem;
-      margin: 0 0 20px;
-      text-align: center;
+
+    /* Top Bar */
+    .top-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--border);
+      background: rgba(15, 22, 35, 0.8);
+      backdrop-filter: blur(12px);
+      position: sticky;
+      top: 0;
+      z-index: 50;
+    }
+    body.light .top-bar {
+      background: rgba(255,255,255,0.85);
+    }
+    .logo {
+      font-weight: 700;
+      font-size: 1.1rem;
+      display: flex;
+      align-items: center;
+      gap: 8px;
       color: var(--text);
     }
-    h2 {
-      font-size: 1.15rem;
-      margin: 24px 0 12px;
+    .logo span {
+      background: linear-gradient(135deg, #3b82f6, #60a5fa);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .top-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .theme-btn, .logout-btn {
+      background: var(--card);
+      border: 1px solid var(--border);
+      color: var(--text);
+      border-radius: 10px;
+      font-size: 14px;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+    .theme-btn {
+      width: 40px;
+      height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      padding: 0;
+    }
+    .logout-btn {
+      padding: 8px 14px;
+    }
+
+    /* Main content */
+    .container {
+      max-width: 560px;
+      margin: 0 auto;
+      padding: 24px 16px 40px;
+    }
+
+    .hero {
+      text-align: center;
+      margin-bottom: 32px;
+      padding-top: 10px;
+    }
+    .hero h1 {
+      font-size: 1.9rem;
+      font-weight: 700;
+      line-height: 1.25;
+      margin-bottom: 10px;
+    }
+    .hero h1 .highlight {
+      color: var(--accent);
+    }
+    .hero p {
       color: var(--muted);
+      font-size: 0.95rem;
+      max-width: 340px;
+      margin: 0 auto 20px;
+    }
+    .user-greeting {
+      display: inline-block;
+      background: var(--card);
+      border: 1px solid var(--border);
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 0.85rem;
+      color: var(--muted);
+      margin-bottom: 8px;
+    }
+
+    /* Create section */
+    .create-box {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 20px;
+      margin-bottom: 28px;
+    }
+    .create-box h2 {
+      font-size: 1.05rem;
+      margin-bottom: 14px;
+      color: var(--text);
     }
     input, textarea {
       width: 100%;
@@ -58,30 +158,40 @@
       border: 1px solid var(--border);
       padding: 12px 14px;
       border-radius: 10px;
-      font-size: 16px;
+      font-size: 15px;
       margin-bottom: 10px;
     }
     input:focus, textarea:focus {
       outline: none;
       border-color: var(--primary);
+      box-shadow: 0 0 0 3px var(--primary-glow);
     }
-    button {
+    .primary-btn {
       background: var(--primary);
       color: white;
       border: none;
-      padding: 10px 16px;
-      border-radius: 8px;
-      font-size: 14px;
-      font-weight: 500;
-      margin-right: 6px;
-      margin-top: 8px;
+      padding: 12px 20px;
+      border-radius: 10px;
+      font-size: 15px;
+      font-weight: 600;
+      width: 100%;
+      margin-top: 4px;
+      cursor: pointer;
     }
-    button:active { opacity: 0.85; }
+    .primary-btn:active { opacity: 0.9; }
+
+    /* Sessions */
+    .section-title {
+      font-size: 1.05rem;
+      margin-bottom: 14px;
+      color: var(--muted);
+      font-weight: 500;
+    }
     .session-card {
       background: var(--card);
       border: 1px solid var(--border);
-      padding: 16px;
-      border-radius: 14px;
+      border-radius: 16px;
+      padding: 18px;
       margin-bottom: 14px;
     }
     .session-card strong {
@@ -90,60 +200,81 @@
     }
     .meta {
       color: var(--muted);
-      font-size: 0.95rem;
-      margin: 4px 0;
+      font-size: 0.9rem;
+      margin: 4px 0 6px;
     }
     .countdown {
       display: inline-block;
-      margin: 6px 0;
       font-weight: 600;
+      margin-bottom: 6px;
     }
     .members {
-      margin-top: 8px;
-      font-size: 0.95rem;
+      margin: 8px 0;
+      font-size: 0.9rem;
       color: #86efac;
       line-height: 1.6;
     }
     body.light .members { color: #15803d; }
     .notes-preview {
-      margin-top: 10px;
+      margin: 10px 0;
       padding: 10px 12px;
       background: var(--input);
-      border-radius: 8px;
-      font-size: 0.9rem;
+      border-radius: 10px;
+      font-size: 0.88rem;
       color: var(--muted);
       border-left: 3px solid var(--primary);
-      max-height: 60px;
+      max-height: 58px;
       overflow: hidden;
     }
+    .card-actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 12px;
+    }
+    .card-actions button {
+      background: var(--primary);
+      color: white;
+      border: none;
+      padding: 8px 14px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 500;
+      margin: 0;
+    }
+
+    .empty {
+      text-align: center;
+      color: var(--muted);
+      padding: 30px 0;
+    }
+
+    /* Modals */
     .modal {
       display: none;
       position: fixed;
-      top: 0; left: 0;
-      width: 100%; height: 100%;
-      background: rgba(0,0,0,0.75);
+      inset: 0;
+      background: rgba(0,0,0,0.8);
       z-index: 100;
       padding: 16px;
       overflow-y: auto;
     }
     .modal-content {
       background: var(--card);
-      padding: 20px;
-      border-radius: 16px;
-      max-width: 500px;
-      margin: 40px auto 0;
+      padding: 22px;
+      border-radius: 18px;
+      max-width: 480px;
+      margin: 50px auto 0;
       border: 1px solid var(--border);
     }
     .modal-content h3 {
-      margin-top: 0;
-      margin-bottom: 8px;
-      color: var(--text);
-      font-size: 1.25rem;
+      margin-bottom: 6px;
+      font-size: 1.2rem;
     }
     .last-updated {
-      font-size: 0.85rem;
+      font-size: 0.82rem;
       color: var(--muted);
-      margin-bottom: 12px;
+      margin-bottom: 14px;
     }
     .toolbar {
       display: flex;
@@ -153,18 +284,20 @@
     }
     .toolbar button {
       background: var(--border);
+      color: var(--text);
       padding: 6px 12px;
+      border-radius: 7px;
       font-size: 13px;
       margin: 0;
-      color: var(--text);
+      border: none;
     }
     #notes-editor {
       background: var(--input);
       border: 1px solid var(--border);
       border-radius: 12px;
       padding: 16px;
-      min-height: 240px;
-      font-size: 16px;
+      min-height: 220px;
+      font-size: 15px;
       line-height: 1.6;
       color: var(--text);
       outline: none;
@@ -172,12 +305,23 @@
     }
     #notes-editor:empty:before {
       content: "Write shared notes here...";
-      color: #888;
+      color: #777;
     }
-    .empty {
-      text-align: center;
-      color: var(--muted);
-      margin-top: 30px;
+
+    /* Improved buttons */
+    .btn {
+      border: none;
+      padding: 10px 18px;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      margin-right: 8px;
+      margin-top: 8px;
+    }
+    .btn-primary {
+      background: var(--primary);
+      color: white;
     }
     .btn-cancel {
       background: var(--border);
@@ -185,106 +329,33 @@
     }
     .btn-danger {
       background: var(--danger);
+      color: white;
     }
+
     .error-text {
       color: #f87171;
-      font-size: 0.9rem;
-      margin-top: -6px;
+      font-size: 0.88rem;
       margin-bottom: 10px;
       display: none;
-    }
-    #toast {
-      position: fixed;
-      bottom: 30px;
-      left: 50%;
-      transform: translateX(-50%);
-      background: var(--card);
-      color: var(--text);
-      padding: 14px 22px;
-      border-radius: 12px;
-      border: 1px solid var(--border);
-      font-size: 15px;
-      z-index: 999;
-      display: none;
-      box-shadow: 0 8px 24px rgba(0,0,0,0.3);
-      max-width: 90%;
-      text-align: center;
-    }
-    #toast.show {
-      display: block;
-      animation: fadeInUp 0.3s ease;
-    }
-    #toast.success { border-color: var(--success); }
-    #toast.error { border-color: var(--danger); }
-    @keyframes fadeInUp {
-      from { opacity: 0; transform: translate(-50%, 20px); }
-      to { opacity: 1; transform: translate(-50%, 0); }
     }
 
     /* Auth */
     #auth-screen {
       max-width: 400px;
-      margin: 40px auto 0;
+      margin: 0 auto;
+      padding: 20px 16px;
     }
     .auth-toggle {
       text-align: center;
-      margin-top: 16px;
+      margin-top: 18px;
       color: var(--muted);
-      font-size: 0.95rem;
+      font-size: 0.93rem;
     }
     .auth-toggle span {
       color: var(--primary);
       cursor: pointer;
     }
-    #app-screen {
-      display: none;
-    }
-
-    /* Top bar */
-    .top-bar {
-      display: flex;
-      justify-content: flex-end;
-      align-items: center;
-      gap: 10px;
-      margin-bottom: 16px;
-    }
-    .top-bar button {
-      margin: 0;
-      padding: 8px 14px;
-      font-size: 13px;
-      border-radius: 8px;
-    }
-    .theme-btn {
-      background: var(--card);
-      border: 1px solid var(--border);
-      color: var(--text);
-      width: 42px;
-      height: 42px;
-      border-radius: 50%;
-      font-size: 18px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 0;
-    }
-    .logout-btn {
-      background: var(--card);
-      border: 1px solid var(--border);
-      color: var(--text);
-    }
-
-    .user-bar {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 20px;
-      padding: 12px 16px;
-      background: var(--card);
-      border-radius: 10px;
-      font-size: 0.95rem;
-      border: 1px solid var(--border);
-      font-weight: 500;
-    }
+    #app-screen { display: none; }
 
     /* Password eye */
     .password-wrapper {
@@ -303,82 +374,121 @@
       background: none;
       border: none;
       color: var(--muted);
-      font-size: 18px;
+      font-size: 17px;
       padding: 0;
-      margin: 0;
-      cursor: pointer;
       width: 28px;
       height: 28px;
       display: flex;
       align-items: center;
       justify-content: center;
+      cursor: pointer;
+    }
+
+    /* Toast */
+    #toast {
+      position: fixed;
+      bottom: 28px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--card);
+      color: var(--text);
+      padding: 13px 20px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      font-size: 14px;
+      z-index: 999;
+      display: none;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.35);
+      max-width: 90%;
+      text-align: center;
+    }
+    #toast.show {
+      display: block;
+      animation: fadeInUp 0.3s ease;
+    }
+    #toast.success { border-color: var(--success); }
+    #toast.error { border-color: var(--danger); }
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translate(-50%, 16px); }
+      to { opacity: 1; transform: translate(-50%, 0); }
     }
   </style>
 </head>
 <body>
 
-  <!-- ========== AUTH SCREEN ========== -->
+  <!-- AUTH SCREEN -->
   <div id="auth-screen">
-    <div class="top-bar">
-      <button class="theme-btn" onclick="toggleTheme()">
-        <span id="theme-icon-auth">🌙</span>
-      </button>
+    <div class="top-bar" style="margin: 0 -16px 20px; border-radius: 0;">
+      <div class="logo">📘 <span>StudySched</span></div>
+      <div class="top-actions">
+        <button class="theme-btn" onclick="toggleTheme()">
+          <span id="theme-icon-auth">🌙</span>
+        </button>
+      </div>
     </div>
 
-    <h1>Study Scheduler</h1>
-    <p style="text-align:center; color:var(--muted); margin-bottom:24px;">Collaborative study sessions</p>
+    <div style="text-align:center; margin: 30px 0 24px;">
+      <h1 style="font-size:1.8rem; margin-bottom:8px;">Study smarter.<br><span style="color:var(--accent)">Sync together.</span></h1>
+      <p style="color:var(--muted); font-size:0.95rem;">Create focused study sessions and collaborate in real time.</p>
+    </div>
 
     <div id="login-form">
-      <h2>Login</h2>
+      <h2 style="margin-bottom:14px;">Login</h2>
       <input type="email" id="login-email" placeholder="Email">
       <div class="password-wrapper">
         <input type="password" id="login-password" placeholder="Password">
         <button type="button" class="toggle-password" onclick="togglePassword('login-password', this)">👁</button>
       </div>
-      <button onclick="login()" style="width:100%; margin-top:10px;">Login</button>
+      <button class="primary-btn" onclick="login()">Login</button>
       <div class="auth-toggle">
         Don't have an account? <span onclick="showSignup()">Sign up</span>
       </div>
     </div>
 
     <div id="signup-form" style="display:none;">
-      <h2>Sign Up</h2>
+      <h2 style="margin-bottom:14px;">Create Account</h2>
       <input type="text" id="signup-name" placeholder="Your name">
       <input type="email" id="signup-email" placeholder="Email">
       <div class="password-wrapper">
         <input type="password" id="signup-password" placeholder="Password (min 6 characters)">
         <button type="button" class="toggle-password" onclick="togglePassword('signup-password', this)">👁</button>
       </div>
-      <button onclick="signup()" style="width:100%; margin-top:10px;">Create Account</button>
+      <button class="primary-btn" onclick="signup()">Create Account</button>
       <div class="auth-toggle">
         Already have an account? <span onclick="showLogin()">Login</span>
       </div>
     </div>
   </div>
 
-  <!-- ========== APP SCREEN ========== -->
+  <!-- APP SCREEN -->
   <div id="app-screen">
     <div class="top-bar">
-      <button class="theme-btn" onclick="toggleTheme()">
-        <span id="theme-icon">🌙</span>
-      </button>
-      <button class="logout-btn" onclick="logout()">Log out</button>
+      <div class="logo">📘 <span>StudySched</span></div>
+      <div class="top-actions">
+        <button class="theme-btn" onclick="toggleTheme()">
+          <span id="theme-icon">🌙</span>
+        </button>
+        <button class="logout-btn" onclick="logout()">Log out</button>
+      </div>
     </div>
 
-    <div class="user-bar">
-      <span id="user-name">Loading...</span>
+    <div class="container">
+      <div class="hero">
+        <div class="user-greeting" id="user-name">Hi there</div>
+        <h1>Ready to <span class="highlight">focus</span>?</h1>
+        <p>Create a study session and invite others to join in real time.</p>
+      </div>
+
+      <div class="create-box">
+        <h2>Create Study Session</h2>
+        <input type="text" id="session-title" placeholder="Session title (e.g. Maths)">
+        <input type="datetime-local" id="session-time">
+        <button class="primary-btn" onclick="createSession()">Create Session</button>
+      </div>
+
+      <div class="section-title">Upcoming Sessions</div>
+      <div id="sessions"><p class="empty">Loading...</p></div>
     </div>
-
-    <h1>Study Scheduler</h1>
-
-    <h2>Create Study Session</h2>
-    <input type="text" id="session-title" placeholder="Session title (e.g. Maths)">
-    <input type="datetime-local" id="session-time">
-    <br>
-    <button onclick="createSession()">Create Session</button>
-
-    <h2>Upcoming Sessions</h2>
-    <div id="sessions"><p class="empty">Loading...</p></div>
   </div>
 
   <!-- Notes Modal -->
@@ -386,18 +496,16 @@
     <div class="modal-content">
       <h3 id="notes-title">Session Notes</h3>
       <div class="last-updated" id="notes-updated">Last updated: —</div>
-
       <div class="toolbar">
         <button type="button" onclick="formatNotes('bold')"><b>B</b></button>
         <button type="button" onclick="formatNotes('italic')"><i>I</i></button>
         <button type="button" onclick="formatNotes('underline')"><u>U</u></button>
         <button type="button" onclick="formatNotes('insertUnorderedList')">• List</button>
       </div>
-
       <div id="notes-editor" contenteditable="true"></div>
       <br>
-      <button onclick="saveNotes()">Save Notes</button>
-      <button class="btn-cancel" onclick="closeNotes()">Close</button>
+      <button class="btn btn-primary" onclick="saveNotes()">Save Notes</button>
+      <button class="btn btn-cancel" onclick="closeNotes()">Close</button>
     </div>
   </div>
 
@@ -408,8 +516,8 @@
       <input type="text" id="join-name" placeholder="Enter your name">
       <div id="join-error" class="error-text">This name is already in the session.</div>
       <br>
-      <button onclick="confirmJoin()">Join</button>
-      <button class="btn-cancel" onclick="closeJoin()">Cancel</button>
+      <button class="btn btn-primary" onclick="confirmJoin()">Join</button>
+      <button class="btn btn-cancel" onclick="closeJoin()">Cancel</button>
     </div>
   </div>
 
@@ -418,13 +526,12 @@
     <div class="modal-content">
       <h3>Delete Session</h3>
       <p style="margin-bottom: 20px; color: var(--muted);">Are you sure you want to delete this session? This cannot be undone.</p>
-      <button class="btn-danger" onclick="confirmDelete()">Delete</button>
-      <button class="btn-cancel" onclick="closeDelete()">Cancel</button>
+      <button class="btn btn-danger" onclick="confirmDelete()">Delete</button>
+      <button class="btn btn-cancel" onclick="closeDelete()">Cancel</button>
     </div>
   </div>
 
   <div id="toast"></div>
-
   <script src="app.js"></script>
 </body>
 </html>

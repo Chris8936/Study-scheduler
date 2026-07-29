@@ -59,7 +59,6 @@ function showApp() {
   document.getElementById("auth-screen").style.display = "none";
   document.getElementById("app-screen").style.display = "block";
 
-  // Show name instead of email
   const name = (currentUser && currentUser.user_metadata && currentUser.user_metadata.name)
     ? currentUser.user_metadata.name
     : (currentUser ? currentUser.email : "User");
@@ -76,7 +75,6 @@ function showAuth() {
 }
 
 async function initSupabase() {
-  // Load saved theme
   if (localStorage.getItem("theme") === "light") {
     document.body.classList.add("light");
     updateThemeIcons(true);
@@ -272,7 +270,7 @@ function renderSessions() {
       "<span class='countdown' id='countdown-" + session.id + "'>Calculating...</span>" +
       "<div class='members'>Members:<br>" + membersHtml + "</div>" +
       notesPreview +
-      "<div>" +
+      "<div class='card-actions'>" +
         "<button onclick='openJoin(" + session.id + ")'>Join</button>" +
         "<button onclick='openNotes(" + session.id + ")'>" + notesBtnText + "</button>" +
         "<button onclick='openDelete(" + session.id + ")'>Delete</button>" +
