@@ -3,20 +3,19 @@ const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
 
 let supabaseClient = null;
 let sessions = [];
-let currentNotesId = null;
 let currentJoinId = null;
 let currentDeleteId = null;
+let currentChatSessionId = null;
 let currentUser = null;
 let realtimeReady = false;
+let chatChannel = null;
 
 function showToast(message, type) {
   if (!type) type = "success";
   const toast = document.getElementById("toast");
   toast.textContent = message;
   toast.className = "show " + type;
-  setTimeout(function() {
-    toast.className = "";
-  }, 3000);
+  setTimeout(function() { toast.className = ""; }, 3000);
 }
 
 function togglePassword(inputId, btn) {
@@ -64,7 +63,6 @@ function showApp() {
     : (currentUser ? currentUser.email : "User");
 
   document.getElementById("user-name").textContent = "Hi, " + name;
-
   loadSessions();
   setupRealtime();
 }
@@ -130,7 +128,6 @@ async function signup() {
     showToast(error.message, "error");
     return;
   }
-
   showToast("Account created! You can now login.");
   showLogin();
 }
@@ -144,16 +141,11 @@ async function login() {
     return;
   }
 
-  const { error } = await supabaseClient.auth.signInWithPassword({
-    email: email,
-    password: password
-  });
-
+  const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
   if (error) {
     showToast(error.message, "error");
     return;
   }
-
   showToast("Logged in successfully");
 }
 
@@ -168,13 +160,9 @@ function setupRealtime() {
 
   supabaseClient
     .channel("sessions-changes")
-    .on(
-      "postgres_changes",
-      { event: "*", schema: "public", table: "sessions" },
-      function() {
-        loadSessions();
-      }
-    )
+    .on("postgres_changes", { event: "*", schema: "public", table: "sessions" }, function() {
+      loadSessions();
+    })
     .subscribe();
 }
 
@@ -213,14 +201,12 @@ async function createSession() {
   const localDate = new Date(timeInput);
   const isoTime = localDate.toISOString();
 
-  const { error } = await supabaseClient.from("sessions").insert([
-    {
-      title: title,
-      time: isoTime,
-      members: [],
-      notes: ""
-    }
-  ]);
+  const { error } = await supabaseClient.from("sessions").insert([{
+    title: title,
+    time: isoTime,
+    members: [],
+    notes: ""
+  }]);
 
   if (error) {
     showToast("Error: " + error.message, "error");
@@ -257,37 +243,20 @@ function renderSessions() {
       });
     }
 
-    let notesBtnText = "Notes";
-    let notesPreview = "";
-
-    if (session.notes && session.notes.trim().length > 0) {
-      notesBtnText = "View Notes";
-      const temp = document.createElement("div");
-      temp.innerHTML = session.notes;
-      const plain = temp.textContent || temp.innerText || "";
-      const preview = plain.trim().substring(0, 80);
-      notesPreview = "<div class='notes-preview'>" + preview + (plain.length > 80 ? "..." : "") + "</div>";
-    }
-
-    // Action buttons
     let actionButtons = "<button onclick='openJoin(" + session.id + ")'>Join</button>";
-
     if (isMember) {
       actionButtons += "<button onclick='leaveSession(" + session.id + ")' style='background:#64748b;'>Leave</button>";
     }
-
-    actionButtons += "<button onclick='openNotes(" + session.id + ")'>" + notesBtnText + "</button>";
+    actionButtons += "<button onclick='openChat(" + session.id + ")'>Chat</button>";
     actionButtons += "<button onclick='openDelete(" + session.id + ")'>Delete</button>";
 
     const div = document.createElement("div");
     div.className = "session-card";
-
     div.innerHTML =
       "<strong>" + session.title + "</strong>" +
       "<div class='meta'>Starts: " + new Date(session.time).toLocaleString() + "</div>" +
       "<span class='countdown' id='countdown-" + session.id + "'>Calculating...</span>" +
       "<div class='members'>Members:<br>" + membersHtml + "</div>" +
-      notesPreview +
       "<div class='card-actions'>" + actionButtons + "</div>";
 
     container.appendChild(div);
@@ -296,7 +265,6 @@ function renderSessions() {
 
 function updateCountdowns() {
   const now = new Date();
-
   sessions.forEach(function(session) {
     const el = document.getElementById("countdown-" + session.id);
     if (!el) return;
@@ -342,9 +310,7 @@ async function confirmJoin() {
     return;
   }
 
-  const session = sessions.find(function(s) {
-    return s.id === currentJoinId;
-  });
+  const session = sessions.find(function(s) { return s.id === currentJoinId; });
   if (!session) return;
 
   let members = session.members || [];
@@ -384,13 +350,10 @@ async function leaveSession(id) {
     return;
   }
 
-  const session = sessions.find(function(s) {
-    return s.id === id;
-  });
+  const session = sessions.find(function(s) { return s.id === id; });
   if (!session) return;
 
-  let members = session.members || [];
-  members = members.filter(function(m) {
+  let members = (session.members || []).filter(function(m) {
     return m.toLowerCase() !== currentName.toLowerCase();
   });
 
@@ -403,7 +366,6 @@ async function leaveSession(id) {
     showToast("Error leaving session", "error");
     return;
   }
-
   showToast("You left the session");
 }
 
@@ -430,58 +392,140 @@ async function confirmDelete() {
     closeDelete();
     return;
   }
-
   closeDelete();
   showToast("Session deleted");
 }
 
-function openNotes(id) {
-  const session = sessions.find(function(s) {
-    return s.id === id;
-  });
-  if (!session) return;
+/* ==================== CHAT ==================== */
 
-  currentNotesId = id;
-  document.getElementById("notes-title").textContent = "Notes – " + session.title;
-  document.getElementById("notes-editor").innerHTML = session.notes || "";
+async function openChat(sessionId) {
+  currentChatSessionId = sessionId;
+  const session = sessions.find(function(s) { return s.id === sessionId; });
+  document.getElementById("chat-title").textContent = session ? session.title : "Group Chat";
+  document.getElementById("chat-modal").style.display = "block";
+  document.getElementById("chat-messages").innerHTML = "<p style='text-align:center;color:var(--muted);padding:20px;'>Loading messages...</p>";
 
-  if (session.created_at) {
-    document.getElementById("notes-updated").textContent =
-      "Last updated: " + new Date(session.created_at).toLocaleString();
-  } else {
-    document.getElementById("notes-updated").textContent = "Last updated: —";
-  }
-
-  document.getElementById("notes-modal").style.display = "block";
+  await loadMessages(sessionId);
+  setupChatRealtime(sessionId);
 }
 
-async function saveNotes() {
-  if (!supabaseClient) return;
+function closeChat() {
+  document.getElementById("chat-modal").style.display = "none";
+  currentChatSessionId = null;
+  if (chatChannel) {
+    supabaseClient.removeChannel(chatChannel);
+    chatChannel = null;
+  }
+}
 
-  const notes = document.getElementById("notes-editor").innerHTML;
-
-  const { error } = await supabaseClient
-    .from("sessions")
-    .update({ notes: notes })
-    .eq("id", currentNotesId);
+async function loadMessages(sessionId) {
+  const { data, error } = await supabaseClient
+    .from("messages")
+    .select("*")
+    .eq("session_id", sessionId)
+    .order("created_at", { ascending: true });
 
   if (error) {
-    showToast("Error saving notes", "error");
+    console.error(error);
+    document.getElementById("chat-messages").innerHTML = "<p style='text-align:center;color:#f87171;'>Error loading messages</p>";
     return;
   }
 
-  closeNotes();
-  showToast("Notes saved successfully");
+  renderMessages(data || []);
 }
 
-function closeNotes() {
-  document.getElementById("notes-modal").style.display = "none";
-  currentNotesId = null;
+function renderMessages(messages) {
+  const container = document.getElementById("chat-messages");
+  const currentName = (currentUser && currentUser.user_metadata && currentUser.user_metadata.name) || "";
+
+  if (messages.length === 0) {
+    container.innerHTML = "<p style='text-align:center;color:var(--muted);padding:30px 10px;'>No messages yet.<br>Say hello!</p>";
+    return;
+  }
+
+  container.innerHTML = "";
+
+  messages.forEach(function(msg) {
+    const isMine = msg.user_name && msg.user_name.toLowerCase() === currentName.toLowerCase();
+    const time = new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+    const div = document.createElement("div");
+    div.className = "message " + (isMine ? "sent" : "received");
+    div.innerHTML =
+      (isMine ? "" : "<div class='message-name'>" + msg.user_name + "</div>") +
+      "<div>" + msg.message + "</div>" +
+      "<div class='message-time'>" + time + "</div>";
+
+    container.appendChild(div);
+  });
+
+  // Auto scroll to bottom
+  container.scrollTop = container.scrollHeight;
 }
 
-function formatNotes(command) {
-  document.execCommand(command, false, null);
-  document.getElementById("notes-editor").focus();
+function setupChatRealtime(sessionId) {
+  if (chatChannel) {
+    supabaseClient.removeChannel(chatChannel);
+  }
+
+  chatChannel = supabaseClient
+    .channel("chat-" + sessionId)
+    .on(
+      "postgres_changes",
+      {
+        event: "INSERT",
+        schema: "public",
+        table: "messages",
+        filter: "session_id=eq." + sessionId
+      },
+      function(payload) {
+        // Add new message without reloading everything
+        const msg = payload.new;
+        const container = document.getElementById("chat-messages");
+        const currentName = (currentUser && currentUser.user_metadata && currentUser.user_metadata.name) || "";
+        const isMine = msg.user_name && msg.user_name.toLowerCase() === currentName.toLowerCase();
+        const time = new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+        // Remove "No messages" placeholder if present
+        if (container.querySelector("p")) container.innerHTML = "";
+
+        const div = document.createElement("div");
+        div.className = "message " + (isMine ? "sent" : "received");
+        div.innerHTML =
+          (isMine ? "" : "<div class='message-name'>" + msg.user_name + "</div>") +
+          "<div>" + msg.message + "</div>" +
+          "<div class='message-time'>" + time + "</div>";
+
+        container.appendChild(div);
+        container.scrollTop = container.scrollHeight;
+      }
+    )
+    .subscribe();
+}
+
+async function sendMessage() {
+  if (!supabaseClient || !currentChatSessionId) return;
+
+  const input = document.getElementById("chat-input");
+  const text = input.value.trim();
+  if (!text) return;
+
+  const userName = (currentUser && currentUser.user_metadata && currentUser.user_metadata.name) || "Anonymous";
+
+  const { error } = await supabaseClient.from("messages").insert([{
+    session_id: currentChatSessionId,
+    user_name: userName,
+    message: text
+  }]);
+
+  if (error) {
+    showToast("Failed to send message", "error");
+    console.error(error);
+    return;
+  }
+
+  input.value = "";
+  input.focus();
 }
 
 initSupabase();
