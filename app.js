@@ -498,7 +498,7 @@ function renderMessages(messages) {
   const currentName = (currentUser && currentUser.user_metadata && currentUser.user_metadata.name) || "";
 
   if (messages.length === 0) {
-    container.innerHTML = "<p style='text-align:center;color:var(--muted);padding:30px 10px;'>No messages yet.<br>Say hello!</p>";
+    container.innerHTML = "<p style='text-align:center;color:#8696a0;padding:30px 10px;'>No messages yet.<br>Say hello!</p>";
     return;
   }
 
@@ -510,10 +510,20 @@ function renderMessages(messages) {
 
     const div = document.createElement("div");
     div.className = "message " + (isMine ? "sent" : "received");
+
+    let ticks = "";
+    if (isMine) {
+      // WhatsApp style double ticks (blue = read)
+      ticks = "<span class='ticks read'>✓✓</span>";
+    }
+
     div.innerHTML =
       (isMine ? "" : "<div class='message-name'>" + msg.user_name + "</div>") +
       "<div>" + msg.message + "</div>" +
-      "<div class='message-time'>" + time + "</div>";
+      "<div class='message-meta'>" +
+        "<span class='message-time'>" + time + "</span>" +
+        ticks +
+      "</div>";
 
     container.appendChild(div);
   });
@@ -536,7 +546,7 @@ function setupChatRealtime(sessionId) {
         table: "messages",
         filter: "session_id=eq." + sessionId
       },
-      function(payload) {
+  function(payload) {
         const msg = payload.new;
         const container = document.getElementById("chat-messages");
         const currentName = (currentUser && currentUser.user_metadata && currentUser.user_metadata.name) || "";
@@ -547,10 +557,19 @@ function setupChatRealtime(sessionId) {
 
         const div = document.createElement("div");
         div.className = "message " + (isMine ? "sent" : "received");
+
+        let ticks = "";
+        if (isMine) {
+          ticks = "<span class='ticks read'>✓✓</span>";
+        }
+
         div.innerHTML =
           (isMine ? "" : "<div class='message-name'>" + msg.user_name + "</div>") +
           "<div>" + msg.message + "</div>" +
-          "<div class='message-time'>" + time + "</div>";
+          "<div class='message-meta'>" +
+            "<span class='message-time'>" + time + "</span>" +
+            ticks +
+          "</div>";
 
         container.appendChild(div);
         container.scrollTop = container.scrollHeight;
