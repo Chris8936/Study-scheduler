@@ -13,6 +13,35 @@ let presenceChannel = null;
 let onlineUsers = {};
 let notifiedSessions = {};
 
+/* ==================== AVATAR HELPERS ==================== */
+const AVATAR_COLORS = [
+  "#ef4444", "#f97316", "#eab308", "#22c55e",
+  "#14b8a6", "#3b82f6", "#8b5cf6", "#ec4899",
+  "#06b6d4", "#84cc16", "#f59e0b", "#6366f1"
+];
+
+function getAvatarColor(name) {
+  if (!name) return AVATAR_COLORS[0];
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) {
+    hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
+}
+
+function getAvatarInitial(name) {
+  if (!name) return "?";
+  return name.trim().charAt(0).toUpperCase();
+}
+
+function createAvatarHtml(name, sizeClass) {
+  const initial = getAvatarInitial(name);
+  const color = getAvatarColor(name);
+  const size = sizeClass || "";
+  return "<span class='avatar " + size + "' style='background:" + color + "'>" + initial + "</span>";
+}
+
+/* ==================== UTILITIES ==================== */
 function showToast(message, type) {
   if (!type) type = "success";
   const toast = document.getElementById("toast");
@@ -200,8 +229,6 @@ function setupRealtime() {
 /* ==================== ONLINE PRESENCE ==================== */
 function setupGlobalPresence() {
   if (!supabaseClient || !currentUser) return;
-
-  // Prevent double setup
   if (presenceChannel) return;
 
   const userName = (currentUser.user_metadata && currentUser.user_metadata.name) || "Anonymous";
@@ -210,7 +237,6 @@ function setupGlobalPresence() {
     config: { presence: { key: currentUser.id } }
   });
 
-  // Listeners MUST be attached before subscribe()
   presenceChannel.on("presence", { event: "sync" }, function() {
     const state = presenceChannel.presenceState();
     onlineUsers = {};
@@ -355,7 +381,8 @@ function renderSessions() {
       membersHtml = session.members.map(function(name) {
         const online = isUserOnline(session.id, name);
         const dot = online ? "<span class='online-dot'></span>" : "";
-        return "<div class='member-line'>" + dot + name + "</div>";
+        const avatar = createAvatarHtml(name, "avatar-sm");
+        return "<div class='member-line'>" + avatar + " " + dot + name + "</div>";
       }).join("");
 
       isMember = session.members.some(function(m) {
@@ -609,8 +636,14 @@ function renderMessages(messages) {
       ticks = "<span class='ticks read'>✓✓</span>";
     }
 
+    let header = "";
+    if (!isMine) {
+      const avatar = createAvatarHtml(msg.user_name, "avatar-sm");
+      header = "<div class='message-header'>" + avatar + "<div class='message-name'>" + msg.user_name + "</div></div>";
+    }
+
     div.innerHTML =
-      (isMine ? "" : "<div class='message-name'>" + msg.user_name + "</div>") +
+      header +
       "<div>" + msg.message + "</div>" +
       "<div class='message-meta'>" +
         "<span class='message-time'>" + time + "</span>" +
@@ -655,8 +688,14 @@ function setupChatRealtime(sessionId) {
           ticks = "<span class='ticks read'>✓✓</span>";
         }
 
+        let header = "";
+        if (!isMine) {
+          const avatar = createAvatarHtml(msg.user_name, "avatar-sm");
+          header = "<div class='message-header'>" + avatar + "<div class='message-name'>" + msg.user_name + "</div></div>";
+        }
+
         div.innerHTML =
-          (isMine ? "" : "<div class='message-name'>" + msg.user_name + "</div>") +
+          header +
           "<div>" + msg.message + "</div>" +
           "<div class='message-meta'>" +
             "<span class='message-time'>" + time + "</span>" +

@@ -114,7 +114,6 @@
     .bar.active { opacity: 1; background: linear-gradient(to top, #1d4ed8, #60a5fa); }
     .bar-item span { font-size: 0.68rem; color: var(--muted); }
 
-    /* Overlay Card */
     .overlay-card {
       position: relative;
       height: 360px;
@@ -277,12 +276,6 @@
       margin-right: 6px;
       box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.3);
     }
-    .member-line {
-      display: flex;
-      align-items: center;
-      gap: 4px;
-      margin: 2px 0;
-    }
     .online-count {
       font-size: 0.8rem;
       color: #22c55e;
@@ -295,6 +288,43 @@
     }
     body.light .chat-online {
       color: #d1d5db;
+    }
+
+    /* Profile Avatars */
+    .avatar {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: #ffffff;
+      flex-shrink: 0;
+      text-transform: uppercase;
+    }
+    .avatar-sm {
+      width: 22px;
+      height: 22px;
+      font-size: 0.65rem;
+    }
+    .avatar-lg {
+      width: 36px;
+      height: 36px;
+      font-size: 0.9rem;
+    }
+    .member-line {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin: 4px 0;
+    }
+    .message-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 4px;
     }
 
     /* WhatsApp Chat */
@@ -344,7 +374,7 @@
     body.light .message.received { background: #ffffff; color: #111b21; }
 
     .message-name {
-      font-size: 0.78rem; font-weight: 500; color: #53bdeb; margin-bottom: 2px;
+      font-size: 0.78rem; font-weight: 500; color: #53bdeb; margin-bottom: 0;
     }
     body.light .message-name { color: #06cf9c; }
 
@@ -543,7 +573,6 @@
     </div>
   </div>
 
-  <!-- Chat Modal with Online status -->
   <div id="chat-modal" class="modal">
     <div class="chat-modal-content">
       <div class="chat-header">
