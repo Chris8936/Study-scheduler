@@ -9,6 +9,8 @@ let currentChatSessionId = null;
 let currentUser = null;
 let realtimeReady = false;
 let chatChannel = null;
+let presenceChannel = null;
+let onlineUsers = {};
 let notifiedSessions = {};
 
 function showToast(message, type) {
@@ -19,36 +21,25 @@ function showToast(message, type) {
   setTimeout(function() { toast.className = ""; }, 3500);
 }
 
-// Stronger name cleaning
 function normalizeName(name) {
-  return (name || "")
-    .toLowerCase()
-    .trim()
-    .replace(/[^a-z0-9]/g, ""); // remove everything except letters and numbers
+  return (name || "").toLowerCase().trim().replace(/[^a-z0-9]/g, "");
 }
 
-// Play a short notification sound
 function playNotificationSound() {
   try {
     const ctx = new (window.AudioContext || window.webkitAudioContext)();
     const oscillator = ctx.createOscillator();
     const gain = ctx.createGain();
-
     oscillator.connect(gain);
     gain.connect(ctx.destination);
-
     oscillator.type = "sine";
     oscillator.frequency.setValueAtTime(880, ctx.currentTime);
     oscillator.frequency.setValueAtTime(1175, ctx.currentTime + 0.1);
-
     gain.gain.setValueAtTime(0.3, ctx.currentTime);
     gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.4);
-
     oscillator.start(ctx.currentTime);
     oscillator.stop(ctx.currentTime + 0.4);
-  } catch (e) {
-    console.log("Sound not supported");
-  }
+  } catch (e) {}
 }
 
 function togglePassword(inputId, btn) {
@@ -98,6 +89,7 @@ function showApp() {
   document.getElementById("user-name").textContent = "Hi, " + name;
   loadSessions();
   setupRealtime();
+  setupGlobalPresence();
 }
 
 function showAuth() {
@@ -113,7 +105,6 @@ async function initSupabase() {
 
   if (window.supabase) {
     supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-    console.log("Supabase connected");
 
     const { data: { session } } = await supabaseClient.auth.getSession();
     if (session) {
@@ -183,6 +174,13 @@ async function login() {
 }
 
 async function logout() {
+  if (presenceChannel) {
+    try {
+      await presenceChannel.untrack();
+      await supabaseClient.removeChannel(presenceChannel);
+    } catch (e) {}
+    presenceChannel = null;
+  }
   await supabaseClient.auth.signOut();
   showToast("Logged out");
 }
@@ -199,6 +197,84 @@ function setupRealtime() {
     .subscribe();
 }
 
+/* ==================== ONLINE PRESENCE ==================== */
+function setupGlobalPresence() {
+  if (!supabaseClient || !currentUser) return;
+
+  // Prevent double setup
+  if (presenceChannel) return;
+
+  const userName = (currentUser.user_metadata && currentUser.user_metadata.name) || "Anonymous";
+
+  presenceChannel = supabaseClient.channel("online-users", {
+    config: { presence: { key: currentUser.id } }
+  });
+
+  // Listeners MUST be attached before subscribe()
+  presenceChannel.on("presence", { event: "sync" }, function() {
+    const state = presenceChannel.presenceState();
+    onlineUsers = {};
+
+    Object.keys(state).forEach(function(key) {
+      const presences = state[key];
+      presences.forEach(function(p) {
+        if (p.session_id && p.user_name) {
+          if (!onlineUsers[p.session_id]) onlineUsers[p.session_id] = {};
+          onlineUsers[p.session_id][p.user_name] = true;
+        }
+      });
+    });
+
+    renderSessions();
+    updateChatOnlineStatus();
+  });
+
+  presenceChannel.subscribe(async function(status) {
+    if (status === "SUBSCRIBED") {
+      await presenceChannel.track({
+        user_name: userName,
+        online_at: new Date().toISOString()
+      });
+    }
+  });
+}
+
+async function trackSessionPresence(sessionId) {
+  if (!presenceChannel || !currentUser) return;
+
+  const userName = (currentUser.user_metadata && currentUser.user_metadata.name) || "Anonymous";
+
+  await presenceChannel.track({
+    user_name: userName,
+    session_id: sessionId,
+    online_at: new Date().toISOString()
+  });
+}
+
+function isUserOnline(sessionId, name) {
+  return onlineUsers[sessionId] && onlineUsers[sessionId][name];
+}
+
+function getOnlineCount(sessionId) {
+  if (!onlineUsers[sessionId]) return 0;
+  return Object.keys(onlineUsers[sessionId]).length;
+}
+
+function updateChatOnlineStatus() {
+  const el = document.getElementById("chat-online");
+  if (!el || !currentChatSessionId) return;
+
+  const count = getOnlineCount(currentChatSessionId);
+  if (count === 0) {
+    el.textContent = "No one online";
+  } else if (count === 1) {
+    el.textContent = "1 online";
+  } else {
+    el.textContent = count + " online";
+  }
+}
+
+/* ==================== SESSIONS ==================== */
 async function loadSessions() {
   if (!supabaseClient) return;
 
@@ -273,11 +349,14 @@ function renderSessions() {
   sessions.forEach(function(session) {
     let membersHtml = "No one yet";
     let isMember = false;
+    let onlineCount = getOnlineCount(session.id);
 
     if (session.members && session.members.length > 0) {
       membersHtml = session.members.map(function(name) {
-        return "• " + name;
-      }).join("<br>");
+        const online = isUserOnline(session.id, name);
+        const dot = online ? "<span class='online-dot'></span>" : "";
+        return "<div class='member-line'>" + dot + name + "</div>";
+      }).join("");
 
       isMember = session.members.some(function(m) {
         return normalizeName(m) === normalizeName(currentName);
@@ -294,6 +373,10 @@ function renderSessions() {
     const startText = new Date(session.time).toLocaleString();
     const endText = session.end_time ? new Date(session.end_time).toLocaleString() : "—";
 
+    const onlineText = onlineCount > 0
+      ? "<div class='online-count'>● " + onlineCount + " online</div>"
+      : "";
+
     const div = document.createElement("div");
     div.className = "session-card";
     div.innerHTML =
@@ -301,6 +384,7 @@ function renderSessions() {
       "<div class='meta'>Starts: " + startText + "</div>" +
       "<div class='meta'>Ends: " + endText + "</div>" +
       "<span class='countdown' id='countdown-" + session.id + "'>Calculating...</span>" +
+      onlineText +
       "<div class='members'>Members:<br>" + membersHtml + "</div>" +
       "<div class='card-actions'>" + actionButtons + "</div>";
 
@@ -325,7 +409,6 @@ function updateCountdowns() {
       el.textContent = "● Live – In progress";
       el.style.color = "#4ade80";
 
-      // Notify only once when session starts
       if (!notifiedSessions[session.id]) {
         notifiedSessions[session.id] = true;
         showToast("Session \"" + session.title + "\" has started!");
@@ -372,7 +455,6 @@ async function confirmJoin() {
 
   let members = session.members || [];
 
-  // Stronger duplicate check
   const nameExists = members.some(function(m) {
     return normalizeName(m) === normalizeName(name);
   });
@@ -456,13 +538,15 @@ async function confirmDelete() {
 }
 
 /* ==================== CHAT ==================== */
-
 async function openChat(sessionId) {
   currentChatSessionId = sessionId;
   const session = sessions.find(function(s) { return s.id === sessionId; });
   document.getElementById("chat-title").textContent = session ? session.title : "Group Chat";
   document.getElementById("chat-modal").style.display = "block";
-  document.getElementById("chat-messages").innerHTML = "<p style='text-align:center;color:var(--muted);padding:20px;'>Loading messages...</p>";
+  document.getElementById("chat-messages").innerHTML = "<p style='text-align:center;color:#8696a0;padding:20px;'>Loading messages...</p>";
+
+  await trackSessionPresence(sessionId);
+  updateChatOnlineStatus();
 
   await loadMessages(sessionId);
   setupChatRealtime(sessionId);
@@ -471,9 +555,18 @@ async function openChat(sessionId) {
 function closeChat() {
   document.getElementById("chat-modal").style.display = "none";
   currentChatSessionId = null;
+
   if (chatChannel) {
     supabaseClient.removeChannel(chatChannel);
     chatChannel = null;
+  }
+
+  if (presenceChannel && currentUser) {
+    const userName = (currentUser.user_metadata && currentUser.user_metadata.name) || "Anonymous";
+    presenceChannel.track({
+      user_name: userName,
+      online_at: new Date().toISOString()
+    });
   }
 }
 
@@ -513,7 +606,6 @@ function renderMessages(messages) {
 
     let ticks = "";
     if (isMine) {
-      // WhatsApp style double ticks (blue = read)
       ticks = "<span class='ticks read'>✓✓</span>";
     }
 
@@ -546,7 +638,7 @@ function setupChatRealtime(sessionId) {
         table: "messages",
         filter: "session_id=eq." + sessionId
       },
-  function(payload) {
+      function(payload) {
         const msg = payload.new;
         const container = document.getElementById("chat-messages");
         const currentName = (currentUser && currentUser.user_metadata && currentUser.user_metadata.name) || "";
