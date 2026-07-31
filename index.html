@@ -224,6 +224,33 @@
       color: var(--muted); margin-bottom: 10px;
     }
 
+    /* ========== DASHBOARD ========== */
+    .dashboard {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+    .stat-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 16px;
+      text-align: center;
+    }
+    .stat-value {
+      font-size: 1.6rem;
+      font-weight: 700;
+      color: var(--accent);
+      margin-bottom: 4px;
+    }
+    .stat-label {
+      font-size: 0.8rem;
+      color: var(--muted);
+    }
+    .stat-card.live .stat-value { color: #22c55e; }
+    .stat-card.online .stat-value { color: #f97316; }
+
     .create-box {
       background: var(--card); border: 1px solid var(--border);
       border-radius: 16px; padding: 20px; margin-bottom: 28px;
@@ -266,7 +293,6 @@
     }
     .empty { text-align: center; color: var(--muted); padding: 30px 0; }
 
-    /* Online indicator */
     .online-dot {
       display: inline-block;
       width: 8px;
@@ -286,11 +312,8 @@
       color: #8696a0;
       margin-top: 2px;
     }
-    body.light .chat-online {
-      color: #d1d5db;
-    }
+    body.light .chat-online { color: #d1d5db; }
 
-    /* Profile Avatars */
     .avatar {
       width: 28px;
       height: 28px;
@@ -309,11 +332,6 @@
       height: 22px;
       font-size: 0.65rem;
     }
-    .avatar-lg {
-      width: 36px;
-      height: 36px;
-      font-size: 0.9rem;
-    }
     .member-line {
       display: flex;
       align-items: center;
@@ -327,7 +345,6 @@
       margin-bottom: 4px;
     }
 
-    /* WhatsApp Chat */
     .modal {
       display: none; position: fixed; inset: 0; background: #000; z-index: 100;
     }
@@ -556,6 +573,26 @@
         <div class="user-greeting" id="user-name">Hi there</div>
         <h1>Ready to <span class="highlight">focus</span>?</h1>
         <p>Create a study session and invite others to join in real time.</p>
+      </div>
+
+      <!-- DASHBOARD -->
+      <div class="dashboard" id="dashboard">
+        <div class="stat-card">
+          <div class="stat-value" id="stat-total">0</div>
+          <div class="stat-label">Total Sessions</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="stat-joined">0</div>
+          <div class="stat-label">Joined</div>
+        </div>
+        <div class="stat-card live">
+          <div class="stat-value" id="stat-live">0</div>
+          <div class="stat-label">Live Now</div>
+        </div>
+        <div class="stat-card online">
+          <div class="stat-value" id="stat-online">0</div>
+          <div class="stat-label">Online</div>
+        </div>
       </div>
 
       <div class="create-box">

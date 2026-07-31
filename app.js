@@ -13,7 +13,6 @@ let presenceChannel = null;
 let onlineUsers = {};
 let notifiedSessions = {};
 
-/* ==================== AVATAR HELPERS ==================== */
 const AVATAR_COLORS = [
   "#ef4444", "#f97316", "#eab308", "#22c55e",
   "#14b8a6", "#3b82f6", "#8b5cf6", "#ec4899",
@@ -41,7 +40,6 @@ function createAvatarHtml(name, sizeClass) {
   return "<span class='avatar " + size + "' style='background:" + color + "'>" + initial + "</span>";
 }
 
-/* ==================== UTILITIES ==================== */
 function showToast(message, type) {
   if (!type) type = "success";
   const toast = document.getElementById("toast");
@@ -226,7 +224,6 @@ function setupRealtime() {
     .subscribe();
 }
 
-/* ==================== ONLINE PRESENCE ==================== */
 function setupGlobalPresence() {
   if (!supabaseClient || !currentUser) return;
   if (presenceChannel) return;
@@ -253,6 +250,7 @@ function setupGlobalPresence() {
 
     renderSessions();
     updateChatOnlineStatus();
+    updateDashboard();
   });
 
   presenceChannel.subscribe(async function(status) {
@@ -267,9 +265,7 @@ function setupGlobalPresence() {
 
 async function trackSessionPresence(sessionId) {
   if (!presenceChannel || !currentUser) return;
-
   const userName = (currentUser.user_metadata && currentUser.user_metadata.name) || "Anonymous";
-
   await presenceChannel.track({
     user_name: userName,
     session_id: sessionId,
@@ -289,18 +285,51 @@ function getOnlineCount(sessionId) {
 function updateChatOnlineStatus() {
   const el = document.getElementById("chat-online");
   if (!el || !currentChatSessionId) return;
-
   const count = getOnlineCount(currentChatSessionId);
-  if (count === 0) {
-    el.textContent = "No one online";
-  } else if (count === 1) {
-    el.textContent = "1 online";
-  } else {
-    el.textContent = count + " online";
-  }
+  if (count === 0) el.textContent = "No one online";
+  else if (count === 1) el.textContent = "1 online";
+  else el.textContent = count + " online";
 }
 
-/* ==================== SESSIONS ==================== */
+/* ==================== DASHBOARD ==================== */
+function updateDashboard() {
+  const totalEl = document.getElementById("stat-total");
+  const joinedEl = document.getElementById("stat-joined");
+  const liveEl = document.getElementById("stat-live");
+  const onlineEl = document.getElementById("stat-online");
+
+  if (!totalEl) return;
+
+  const currentName = (currentUser && currentUser.user_metadata && currentUser.user_metadata.name) || "";
+  const now = new Date();
+
+  let total = sessions.length;
+  let joined = 0;
+  let live = 0;
+  let onlineTotal = 0;
+
+  sessions.forEach(function(session) {
+    if (session.members && session.members.some(function(m) {
+      return normalizeName(m) === normalizeName(currentName);
+    })) {
+      joined++;
+    }
+
+    const start = new Date(session.time);
+    const end = session.end_time ? new Date(session.end_time) : null;
+    if (now >= start && (!end || now <= end)) {
+      live++;
+    }
+
+    onlineTotal += getOnlineCount(session.id);
+  });
+
+  totalEl.textContent = total;
+  joinedEl.textContent = joined;
+  liveEl.textContent = live;
+  onlineEl.textContent = onlineTotal;
+}
+
 async function loadSessions() {
   if (!supabaseClient) return;
 
@@ -317,6 +346,7 @@ async function loadSessions() {
 
   sessions = data || [];
   renderSessions();
+  updateDashboard();
 }
 
 async function createSession() {
@@ -367,6 +397,7 @@ function renderSessions() {
 
   if (sessions.length === 0) {
     container.innerHTML = "<p class='empty'>No sessions yet.<br>Create one above!</p>";
+    updateDashboard();
     return;
   }
 
@@ -417,6 +448,8 @@ function renderSessions() {
 
     container.appendChild(div);
   });
+
+  updateDashboard();
 }
 
 function updateCountdowns() {
@@ -450,6 +483,8 @@ function updateCountdowns() {
       el.style.color = "#f87171";
     }
   });
+
+  updateDashboard();
 }
 
 function openJoin(id) {
@@ -564,7 +599,6 @@ async function confirmDelete() {
   showToast("Session deleted");
 }
 
-/* ==================== CHAT ==================== */
 async function openChat(sessionId) {
   currentChatSessionId = sessionId;
   const session = sessions.find(function(s) { return s.id === sessionId; });
@@ -632,9 +666,7 @@ function renderMessages(messages) {
     div.className = "message " + (isMine ? "sent" : "received");
 
     let ticks = "";
-    if (isMine) {
-      ticks = "<span class='ticks read'>✓✓</span>";
-    }
+    if (isMine) ticks = "<span class='ticks read'>✓✓</span>";
 
     let header = "";
     if (!isMine) {
@@ -684,9 +716,7 @@ function setupChatRealtime(sessionId) {
         div.className = "message " + (isMine ? "sent" : "received");
 
         let ticks = "";
-        if (isMine) {
-          ticks = "<span class='ticks read'>✓✓</span>";
-        }
+        if (isMine) ticks = "<span class='ticks read'>✓✓</span>";
 
         let header = "";
         if (!isMine) {
