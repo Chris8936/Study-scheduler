@@ -224,7 +224,7 @@
       color: var(--muted); margin-bottom: 10px;
     }
 
-    /* ========== DASHBOARD ========== */
+    /* Dashboard */
     .dashboard {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -292,6 +292,18 @@
       padding: 8px 14px; border-radius: 8px; font-size: 13px; font-weight: 500; margin: 0;
     }
     .empty { text-align: center; color: var(--muted); padding: 30px 0; }
+
+    /* Notification button */
+    .btn-notify {
+      background: #64748b !important;
+    }
+    .btn-notify.enabled {
+      background: #22c55e !important;
+    }
+    .btn-notify:disabled {
+      opacity: 0.7;
+      cursor: default;
+    }
 
     .online-dot {
       display: inline-block;
@@ -513,13 +525,29 @@
         </div>
       </div>
 
-      <div class="courses-section">
+<div class="courses-section">
         <h3 class="courses-title">Popular Study Tracks</h3>
         <div class="courses-slider">
-          <div class="course-card"><div class="course-badge">INS 204</div><h4>Systems Analysis and Design</h4><p>12 active members</p></div>
-          <div class="course-card"><div class="course-badge">MTH 201</div><h4>Mathematical Methods I</h4><p>8 active members</p></div>
-          <div class="course-card"><div class="course-badge">CSC 301</div><h4>Introduction to the Theory of Computing</h4><p>15 active members</p></div>
-          <div class="course-card"><div class="course-badge">ENG 102</div><h4>Use of English II</h4><p>6 active members</p></div>
+          <div class="course-card">
+            <div class="course-badge">INS 204</div>
+            <h4>Systems Analysis and Design</h4>
+            <p>12 active members</p>
+          </div>
+          <div class="course-card">
+            <div class="course-badge">MTH 201</div>
+            <h4>Mathematical Methods I</h4>
+            <p>8 active members</p>
+          </div>
+          <div class="course-card">
+            <div class="course-badge">CSC 301</div>
+            <h4>Introduction to Computer Systems</h4>
+            <p>15 active members</p>
+          </div>
+          <div class="course-card">
+            <div class="course-badge">GST 102</div>
+            <h4>Use of English II</h4>
+            <p>6 active members</p>
+          </div>
         </div>
       </div>
 
@@ -575,7 +603,6 @@
         <p>Create a study session and invite others to join in real time.</p>
       </div>
 
-      <!-- DASHBOARD -->
       <div class="dashboard" id="dashboard">
         <div class="stat-card">
           <div class="stat-value" id="stat-total">0</div>

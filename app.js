@@ -12,6 +12,7 @@ let chatChannel = null;
 let presenceChannel = null;
 let onlineUsers = {};
 let notifiedSessions = {};
+let notifiedSoon = {};
 
 const AVATAR_COLORS = [
   "#ef4444", "#f97316", "#eab308", "#22c55e",
@@ -67,6 +68,66 @@ function playNotificationSound() {
     oscillator.start(ctx.currentTime);
     oscillator.stop(ctx.currentTime + 0.4);
   } catch (e) {}
+}
+
+/* ==================== NOTIFICATIONS ==================== */
+function getNotifyList() {
+  try {
+    return JSON.parse(localStorage.getItem("notifySessions") || "[]");
+  } catch (e) {
+    return [];
+  }
+}
+
+function saveNotifyList(list) {
+  localStorage.setItem("notifySessions", JSON.stringify(list));
+}
+
+function isNotifyEnabled(sessionId) {
+  return getNotifyList().indexOf(String(sessionId)) !== -1;
+}
+
+function sendBrowserNotification(title, body) {
+  if (!("Notification" in window)) return;
+  if (Notification.permission !== "granted") return;
+
+  try {
+    new Notification(title, {
+      body: body,
+      icon: "logo.png",
+      badge: "logo.png"
+    });
+  } catch (e) {}
+}
+
+async function toggleNotify(sessionId) {
+  sessionId = String(sessionId);
+  let list = getNotifyList();
+
+  // Turn OFF
+  if (list.indexOf(sessionId) !== -1) {
+    list = list.filter(function(id) { return id !== sessionId; });
+    saveNotifyList(list);
+    showToast("Notifications turned off for this session");
+    renderSessions();
+    return;
+  }
+
+  // Turn ON
+  if ("Notification" in window) {
+    if (Notification.permission === "denied") {
+      showToast("Please allow notifications in browser settings", "error");
+    } else if (Notification.permission !== "granted") {
+      try {
+        await Notification.requestPermission();
+      } catch (e) {}
+    }
+  }
+
+  list.push(sessionId);
+  saveNotifyList(list);
+  showToast("You will be notified when this session starts");
+  renderSessions();
 }
 
 function togglePassword(inputId, btn) {
@@ -291,7 +352,6 @@ function updateChatOnlineStatus() {
   else el.textContent = count + " online";
 }
 
-/* ==================== DASHBOARD ==================== */
 function updateDashboard() {
   const totalEl = document.getElementById("stat-total");
   const joinedEl = document.getElementById("stat-joined");
@@ -421,11 +481,16 @@ function renderSessions() {
       });
     }
 
+    const notifyOn = isNotifyEnabled(session.id);
+    const notifyBtnClass = notifyOn ? "btn-notify enabled" : "btn-notify";
+    const notifyBtnText = notifyOn ? "🔔 On" : "🔔 Notify";
+
     let actionButtons = "<button onclick='openJoin(" + session.id + ")'>Join</button>";
     if (isMember) {
       actionButtons += "<button onclick='leaveSession(" + session.id + ")' style='background:#64748b;'>Leave</button>";
     }
     actionButtons += "<button onclick='openChat(" + session.id + ")'>Chat</button>";
+    actionButtons += "<button class='" + notifyBtnClass + "' onclick='toggleNotify(" + session.id + ")'>" + notifyBtnText + "</button>";
     actionButtons += "<button onclick='openDelete(" + session.id + ")'>Delete</button>";
 
     const startText = new Date(session.time).toLocaleString();
@@ -461,6 +526,22 @@ function updateCountdowns() {
 
     const start = new Date(session.time);
     const end = session.end_time ? new Date(session.end_time) : null;
+    const notifyEnabled = isNotifyEnabled(session.id);
+
+    // 5 minutes before start
+    const fiveMin = 5 * 60 * 1000;
+    if (notifyEnabled && !notifiedSoon[session.id] && now < start) {
+      const diff = start - now;
+      if (diff <= fiveMin && diff > 0) {
+        notifiedSoon[session.id] = true;
+        showToast("\"" + session.title + "\" starts in a few minutes!");
+        playNotificationSound();
+        sendBrowserNotification(
+          "Session starting soon",
+          session.title + " starts in about 5 minutes"
+        );
+      }
+    }
 
     if (end && now > end) {
       el.textContent = "Session ended";
@@ -473,6 +554,13 @@ function updateCountdowns() {
         notifiedSessions[session.id] = true;
         showToast("Session \"" + session.title + "\" has started!");
         playNotificationSound();
+
+        if (notifyEnabled) {
+          sendBrowserNotification(
+            "Session started",
+            session.title + " is now live. Join the study session!"
+          );
+        }
       }
     } else {
       const diff = start - now;
