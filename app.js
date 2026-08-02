@@ -487,7 +487,7 @@ function renderSessions() {
 
     let actionButtons = "<button onclick='openJoin(" + session.id + ")'>Join</button>";
     if (isMember) {
-      actionButtons += "<button onclick='leaveSession(" + session.id + ")' style='background:#64748b;'>Leave</button>";
+      actionButtons += "<button onclick='leaveSession(" + session.id + ")' style='background:#ef4444;'>Leave</button>";
     }
     actionButtons += "<button onclick='openChat(" + session.id + ")'>Chat</button>";
     actionButtons += "<button class='" + notifyBtnClass + "' onclick='toggleNotify(" + session.id + ")'>" + notifyBtnText + "</button>";
@@ -575,62 +575,7 @@ function updateCountdowns() {
   updateDashboard();
 }
 
-function openJoin(id) {
-  currentJoinId = id;
-  const name = (currentUser && currentUser.user_metadata && currentUser.user_metadata.name) || "";
-  document.getElementById("join-name").value = name;
-  document.getElementById("join-error").style.display = "none";
-  document.getElementById("join-modal").style.display = "block";
-}
 
-function closeJoin() {
-  document.getElementById("join-modal").style.display = "none";
-  currentJoinId = null;
-}
-
-async function confirmJoin() {
-  if (!supabaseClient || !currentJoinId) return;
-
-  const name = document.getElementById("join-name").value.trim();
-  const errorEl = document.getElementById("join-error");
-
-  if (!name) {
-    errorEl.textContent = "Please enter your name.";
-    errorEl.style.display = "block";
-    return;
-  }
-
-  const session = sessions.find(function(s) { return s.id === currentJoinId; });
-  if (!session) return;
-
-  let members = session.members || [];
-
-  const nameExists = members.some(function(m) {
-    return normalizeName(m) === normalizeName(name);
-  });
-
-  if (nameExists) {
-    errorEl.textContent = "This name (or a very similar one) is already in the session.";
-    errorEl.style.display = "block";
-    return;
-  }
-
-  members.push(name);
-
-  const { error } = await supabaseClient
-    .from("sessions")
-    .update({ members: members })
-    .eq("id", currentJoinId);
-
-  if (error) {
-    errorEl.textContent = "Error joining: " + error.message;
-    errorEl.style.display = "block";
-    return;
-  }
-
-  closeJoin();
-  showToast("Joined successfully");
-}
 
 async function leaveSession(id) {
   if (!supabaseClient || !currentUser) return;
