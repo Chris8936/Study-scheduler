@@ -44,6 +44,7 @@ function createAvatarHtml(name, sizeClass) {
 function showToast(message, type) {
   if (!type) type = "success";
   const toast = document.getElementById("toast");
+  if (!toast) return;
   toast.textContent = message;
   toast.className = "show " + type;
   setTimeout(function() { toast.className = ""; }, 3500);
@@ -70,7 +71,6 @@ function playNotificationSound() {
   } catch (e) {}
 }
 
-/* ==================== NOTIFICATIONS ==================== */
 function getNotifyList() {
   try {
     return JSON.parse(localStorage.getItem("notifySessions") || "[]");
@@ -90,7 +90,6 @@ function isNotifyEnabled(sessionId) {
 function sendBrowserNotification(title, body) {
   if (!("Notification" in window)) return;
   if (Notification.permission !== "granted") return;
-
   try {
     new Notification(title, {
       body: body,
@@ -104,7 +103,6 @@ async function toggleNotify(sessionId) {
   sessionId = String(sessionId);
   let list = getNotifyList();
 
-  // Turn OFF
   if (list.indexOf(sessionId) !== -1) {
     list = list.filter(function(id) { return id !== sessionId; });
     saveNotifyList(list);
@@ -113,7 +111,6 @@ async function toggleNotify(sessionId) {
     return;
   }
 
-  // Turn ON
   if ("Notification" in window) {
     if (Notification.permission === "denied") {
       showToast("Please allow notifications in browser settings", "error");
@@ -132,6 +129,7 @@ async function toggleNotify(sessionId) {
 
 function togglePassword(inputId, btn) {
   const input = document.getElementById(inputId);
+  if (!input) return;
   if (input.type === "password") {
     input.type = "text";
     btn.textContent = "🙈";
@@ -174,7 +172,9 @@ function showApp() {
     ? currentUser.user_metadata.name
     : (currentUser ? currentUser.email : "User");
 
-  document.getElementById("user-name").textContent = "Hi, " + name;
+  const userEl = document.getElementById("user-name");
+  if (userEl) userEl.textContent = "Hi, " + name;
+
   loadSessions();
   setupRealtime();
   setupGlobalPresence();
@@ -357,7 +357,6 @@ function updateDashboard() {
   const joinedEl = document.getElementById("stat-joined");
   const liveEl = document.getElementById("stat-live");
   const onlineEl = document.getElementById("stat-online");
-
   if (!totalEl) return;
 
   const currentName = (currentUser && currentUser.user_metadata && currentUser.user_metadata.name) || "";
@@ -400,7 +399,8 @@ async function loadSessions() {
 
   if (error) {
     console.error(error);
-    document.getElementById("sessions").innerHTML = "<p class='empty'>Error loading sessions</p>";
+    const el = document.getElementById("sessions");
+    if (el) el.innerHTML = "<p class='empty'>Error loading sessions</p>";
     return;
   }
 
@@ -453,6 +453,7 @@ async function createSession() {
 
 function renderSessions() {
   const container = document.getElementById("sessions");
+  if (!container) return;
   container.innerHTML = "";
 
   if (sessions.length === 0) {
@@ -528,7 +529,6 @@ function updateCountdowns() {
     const end = session.end_time ? new Date(session.end_time) : null;
     const notifyEnabled = isNotifyEnabled(session.id);
 
-    // 5 minutes before start
     const fiveMin = 5 * 60 * 1000;
     if (notifyEnabled && !notifiedSoon[session.id] && now < start) {
       const diff = start - now;
@@ -536,10 +536,7 @@ function updateCountdowns() {
         notifiedSoon[session.id] = true;
         showToast("\"" + session.title + "\" starts in a few minutes!");
         playNotificationSound();
-        sendBrowserNotification(
-          "Session starting soon",
-          session.title + " starts in about 5 minutes"
-        );
+        sendBrowserNotification("Session starting soon", session.title + " starts in about 5 minutes");
       }
     }
 
@@ -554,12 +551,8 @@ function updateCountdowns() {
         notifiedSessions[session.id] = true;
         showToast("Session \"" + session.title + "\" has started!");
         playNotificationSound();
-
         if (notifyEnabled) {
-          sendBrowserNotification(
-            "Session started",
-            session.title + " is now live. Join the study session!"
-          );
+          sendBrowserNotification("Session started", session.title + " is now live. Join the study session!");
         }
       }
     } else {
@@ -575,7 +568,54 @@ function updateCountdowns() {
   updateDashboard();
 }
 
+/* ========== INSTANT JOIN ========== */
+function openJoin(id) {
+  confirmJoinDirect(id);
+}
 
+async function confirmJoinDirect(sessionId) {
+  if (!supabaseClient || !currentUser) {
+    showToast("Please login first", "error");
+    return;
+  }
+
+  const name = (currentUser.user_metadata && currentUser.user_metadata.name)
+    ? currentUser.user_metadata.name.trim()
+    : "";
+
+  if (!name) {
+    showToast("Your account has no name. Please update your profile.", "error");
+    return;
+  }
+
+  const session = sessions.find(function(s) { return s.id === sessionId; });
+  if (!session) return;
+
+  let members = session.members || [];
+
+  const nameExists = members.some(function(m) {
+    return normalizeName(m) === normalizeName(name);
+  });
+
+  if (nameExists) {
+    showToast("You are already in this session", "error");
+    return;
+  }
+
+  members.push(name);
+
+  const { error } = await supabaseClient
+    .from("sessions")
+    .update({ members: members })
+    .eq("id", sessionId);
+
+  if (error) {
+    showToast("Error joining: " + error.message, "error");
+    return;
+  }
+
+  showToast("Joined successfully as " + name);
+}
 
 async function leaveSession(id) {
   if (!supabaseClient || !currentUser) return;
@@ -641,7 +681,6 @@ async function openChat(sessionId) {
 
   await trackSessionPresence(sessionId);
   updateChatOnlineStatus();
-
   await loadMessages(sessionId);
   setupChatRealtime(sessionId);
 }
@@ -789,7 +828,6 @@ async function sendMessage() {
 
   if (error) {
     showToast("Failed to send message", "error");
-    console.error(error);
     return;
   }
 
@@ -797,5 +835,6 @@ async function sendMessage() {
   input.focus();
 }
 
+// Start the app
 initSupabase();
 setInterval(updateCountdowns, 1000);
