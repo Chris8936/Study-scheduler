@@ -1,25 +1,9 @@
-const CACHE_NAME = "studysched-v1";
-const urlsToCache = [
-  "/",
-  "/index.html",
-  "/app.js",
-  "/manifest.json",
-  "/logo.png",
-  "/logo-192.png",
-  "/logo-512.png"
-];
+const CACHE_NAME = "studysched-v3";
 
-// Install
 self.addEventListener("install", function(event) {
-  event.waitUntil(
-    caches.open(CACHE_NAME).then(function(cache) {
-      return cache.addAll(urlsToCache);
-    })
-  );
   self.skipWaiting();
 });
 
-// Activate
 self.addEventListener("activate", function(event) {
   event.waitUntil(
     caches.keys().then(function(keys) {
@@ -35,11 +19,25 @@ self.addEventListener("activate", function(event) {
   self.clients.claim();
 });
 
-// Fetch
+// Network first for JS files (always get latest code)
 self.addEventListener("fetch", function(event) {
-  event.respondWith(
-    caches.match(event.request).then(function(response) {
-      return response || fetch(event.request);
-    })
-  );
+  const url = event.request.url;
+
+  if (url.includes("app.js") || url.includes("index.html")) {
+    event.respondWith(
+      fetch(event.request)
+        .then(function(response) {
+          return response;
+        })
+        .catch(function() {
+          return caches.match(event.request);
+        })
+    );
+  } else {
+    event.respondWith(
+      caches.match(event.request).then(function(response) {
+        return response || fetch(event.request);
+      })
+    );
+  }
 });

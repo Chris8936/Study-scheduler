@@ -568,7 +568,6 @@ function updateCountdowns() {
   updateDashboard();
 }
 
-/* ========== INSTANT JOIN ========== */
 function openJoin(id) {
   confirmJoinDirect(id);
 }
@@ -838,3 +837,22 @@ async function sendMessage() {
 // Start the app
 initSupabase();
 setInterval(updateCountdowns, 1000);
+
+// Make functions available globally (important for installed PWA)
+window.openJoin = openJoin;
+window.leaveSession = leaveSession;
+window.openChat = openChat;
+window.toggleNotify = toggleNotify;
+window.openDelete = openDelete;
+window.closeDelete = closeDelete;
+window.confirmDelete = confirmDelete;
+window.closeChat = closeChat;
+window.sendMessage = sendMessage;
+window.createSession = createSession;
+window.login = login;
+window.signup = signup;
+window.logout = logout;
+window.toggleTheme = toggleTheme;
+window.togglePassword = togglePassword;
+window.showLogin = showLogin;
+window.showSignup = showSignup;
