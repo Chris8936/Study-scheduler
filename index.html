@@ -4,6 +4,15 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>StudySched</title>
+
+  <!-- PWA -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#0f1623">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="StudySched">
+  <link rel="apple-touch-icon" href="logo-192.png">
+
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     :root {
@@ -688,6 +697,22 @@
   </div>
 
   <div id="toast"></div>
+
   <script src="app.js"></script>
+
+  <!-- Register Service Worker for PWA -->
+  <script>
+    if ("serviceWorker" in navigator) {
+      window.addEventListener("load", function() {
+        navigator.serviceWorker.register("/sw.js")
+          .then(function() {
+            console.log("Service Worker registered");
+          })
+          .catch(function(err) {
+            console.log("Service Worker failed:", err);
+          });
+      });
+    }
+  </script>
 </body>
 </html>
