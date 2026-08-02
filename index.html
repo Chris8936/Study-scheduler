@@ -224,7 +224,6 @@
       color: var(--muted); margin-bottom: 10px;
     }
 
-    /* Dashboard */
     .dashboard {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -293,17 +292,8 @@
     }
     .empty { text-align: center; color: var(--muted); padding: 30px 0; }
 
-    /* Notification button */
-    .btn-notify {
-      background: #64748b !important;
-    }
-    .btn-notify.enabled {
-      background: #22c55e !important;
-    }
-    .btn-notify:disabled {
-      opacity: 0.7;
-      cursor: default;
-    }
+    .btn-notify { background: #64748b !important; }
+    .btn-notify.enabled { background: #22c55e !important; }
 
     .online-dot {
       display: inline-block;
@@ -469,6 +459,21 @@
       align-items: center; justify-content: center; cursor: pointer;
     }
 
+    .app-footer {
+      text-align: center;
+      padding: 28px 16px 20px;
+      font-size: 0.82rem;
+      color: var(--muted);
+      letter-spacing: 0.2px;
+    }
+    .app-footer span {
+      color: #60a5fa;
+      font-weight: 600;
+    }
+    body.light .app-footer span {
+      color: #2563eb;
+    }
+
     #toast {
       position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%);
       background: var(--card); color: var(--text); padding: 13px 20px;
@@ -525,7 +530,7 @@
         </div>
       </div>
 
-<div class="courses-section">
+      <div class="courses-section">
         <h3 class="courses-title">Popular Study Tracks</h3>
         <div class="courses-slider">
           <div class="course-card">
@@ -581,6 +586,10 @@
           <span id="theme-icon-auth">🌙</span>
         </button>
       </div>
+
+      <div class="app-footer">
+        Created by <span>Christian</span> · © 2026 All rights reserved.
+      </div>
     </div>
   </div>
 
@@ -634,6 +643,10 @@
 
       <div class="section-title">Upcoming Sessions</div>
       <div id="sessions"><p class="empty">Loading...</p></div>
+
+      <div class="app-footer">
+        Created by <span>Christian</span> · © 2026 All rights reserved.
+      </div>
     </div>
   </div>
 
