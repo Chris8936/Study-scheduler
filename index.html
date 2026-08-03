@@ -4,287 +4,108 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>StudySched</title>
-
-  <!-- PWA -->
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#0f1623">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="StudySched">
   <link rel="apple-touch-icon" href="logo-192.png">
-
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     :root {
-      --bg: #070b14;
-      --card: #0f1623;
-      --input: #141c2b;
-      --text: #e8eef7;
-      --muted: #8b9bb4;
-      --border: #1e2a3d;
-      --primary: #3b82f6;
-      --primary-glow: rgba(59, 130, 246, 0.25);
-      --danger: #ef4444;
-      --success: #22c55e;
-      --accent: #60a5fa;
-      --orange: #f97316;
+      --bg: #070b14; --card: #0f1623; --input: #141c2b; --text: #e8eef7;
+      --muted: #8b9bb4; --border: #1e2a3d; --primary: #3b82f6;
+      --primary-glow: rgba(59,130,246,0.25); --danger: #ef4444;
+      --success: #22c55e; --accent: #60a5fa; --orange: #f97316;
     }
-
     body.light {
-      --bg: #f1f5f9;
-      --card: #ffffff;
-      --input: #ffffff;
-      --text: #0f172a;
-      --muted: #64748b;
-      --border: #e2e8f0;
-      --primary: #2563eb;
-      --primary-glow: rgba(37, 99, 235, 0.15);
-      --danger: #dc2626;
-      --success: #16a34a;
-      --accent: #3b82f6;
-      --orange: #ea580c;
+      --bg: #f1f5f9; --card: #ffffff; --input: #ffffff; --text: #0f172a;
+      --muted: #64748b; --border: #e2e8f0; --primary: #2563eb;
+      --primary-glow: rgba(37,99,235,0.15); --danger: #dc2626;
+      --success: #16a34a; --accent: #3b82f6; --orange: #ea580c;
     }
-
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      background: var(--bg);
-      color: var(--text);
-      min-height: 100vh;
-      line-height: 1.5;
-      transition: background 0.3s, color 0.3s;
+      background: var(--bg); color: var(--text); min-height: 100vh;
+      line-height: 1.5; transition: background 0.3s, color 0.3s;
     }
-
     #auth-screen {
       min-height: 100vh;
-      background: 
-        radial-gradient(ellipse at 20% 20%, rgba(249, 115, 22, 0.12) 0%, transparent 50%),
-        radial-gradient(ellipse at 80% 80%, rgba(59, 130, 246, 0.15) 0%, transparent 50%),
-        var(--bg);
+      background: radial-gradient(ellipse at 20% 20%, rgba(249,115,22,0.12) 0%, transparent 50%),
+                  radial-gradient(ellipse at 80% 80%, rgba(59,130,246,0.15) 0%, transparent 50%), var(--bg);
       padding: 20px 16px 50px;
     }
     body.light #auth-screen {
-      background: 
-        radial-gradient(ellipse at 20% 20%, rgba(249, 115, 22, 0.06) 0%, transparent 50%),
-        radial-gradient(ellipse at 80% 80%, rgba(37, 99, 235, 0.08) 0%, transparent 50%),
-        #f1f5f9;
+      background: radial-gradient(ellipse at 20% 20%, rgba(249,115,22,0.06) 0%, transparent 50%),
+                  radial-gradient(ellipse at 80% 80%, rgba(37,99,235,0.08) 0%, transparent 50%), #f1f5f9;
     }
-
     .auth-container { max-width: 420px; margin: 0 auto; }
-
-    .brand {
-      display: flex; align-items: center; gap: 12px;
-      margin-bottom: 28px; justify-content: center;
-    }
+    .brand { display: flex; align-items: center; gap: 12px; margin-bottom: 28px; justify-content: center; }
     .brand img { width: 48px; height: 48px; border-radius: 12px; object-fit: contain; }
     .brand-text { font-size: 1.4rem; font-weight: 700; }
-    .brand-text span {
-      background: linear-gradient(135deg, #3b82f6, #f97316);
-      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-    }
+    .brand-text span { background: linear-gradient(135deg, #3b82f6, #f97316); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
     .logo-fallback {
       width: 48px; height: 48px; border-radius: 12px;
       background: linear-gradient(145deg, #f97316 0%, #f97316 38%, #1e40af 38%, #1e40af 100%);
       display: none; align-items: center; justify-content: center; position: relative;
     }
     .logo-fallback::after { content: "💬"; font-size: 18px; position: absolute; bottom: 5px; }
-
     .auth-hero { text-align: center; margin-bottom: 26px; }
     .auth-hero h1 { font-size: 2rem; font-weight: 700; line-height: 1.25; margin-bottom: 12px; }
     .auth-hero h1 .blue { color: #60a5fa; }
-    .hero-sub {
-      color: var(--muted); font-size: 0.98rem; line-height: 1.55;
-      max-width: 340px; margin: 0 auto;
-    }
-
-    .progress-card {
-      background: var(--card); border: 1px solid var(--border);
-      border-radius: 18px; padding: 22px 16px 18px; margin-bottom: 22px; text-align: center;
-    }
-    .progress-label {
-      font-size: 0.75rem; color: var(--accent); font-weight: 600;
-      letter-spacing: 0.6px; margin-bottom: 6px;
-    }
-    .progress-card h3 { font-size: 1.25rem; margin-bottom: 4px; }
-    .progress-desc { font-size: 0.88rem; color: var(--muted); margin-bottom: 22px; }
-    .bars {
-      display: flex; align-items: flex-end; justify-content: space-between;
-      height: 140px; gap: 5px; padding: 0 2px;
-    }
-    .bar-item {
-      flex: 1; display: flex; flex-direction: column; align-items: center;
-      justify-content: flex-end; gap: 5px; height: 100%;
-    }
-    .bar-value { font-size: 0.68rem; color: var(--muted); font-weight: 500; }
-    .bar {
-      width: 100%; max-width: 28px; background: #3b82f6; opacity: 0.35;
-      border-radius: 6px 6px 3px 3px; min-height: 8px;
-    }
-    .bar.active { opacity: 1; background: linear-gradient(to top, #1d4ed8, #60a5fa); }
-    .bar-item span { font-size: 0.68rem; color: var(--muted); }
-
-    .overlay-card {
-      position: relative;
-      height: 360px;
-      border-radius: 22px;
-      overflow: hidden;
-      margin-bottom: 26px;
-      background: #ffffff;
-      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.25);
-    }
-    .overlay-logo {
-      width: 210px;
-      height: 210px;
-      object-fit: contain;
-      position: absolute;
-      top: 28px;
-      left: 50%;
-      transform: translateX(-50%);
-      z-index: 1;
-    }
-    .overlay-content {
-      position: absolute;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      padding: 70px 24px 28px;
-      background: linear-gradient(
-        to top,
-        #0f172a 0%,
-        #0f172a 25%,
-        rgba(15, 23, 42, 0.85) 50%,
-        rgba(15, 23, 42, 0.35) 75%,
-        transparent 100%
-      );
-      z-index: 2;
-    }
-    .overlay-content h3 {
-      font-size: 1.35rem;
-      font-weight: 700;
-      color: #ffffff;
-      margin-bottom: 8px;
-      line-height: 1.3;
-    }
-    .overlay-content p {
-      font-size: 0.93rem;
-      color: rgba(255, 255, 255, 0.92);
-      line-height: 1.5;
-    }
-
-    .courses-section { margin-bottom: 26px; }
-    .courses-title { font-size: 1.05rem; margin-bottom: 14px; font-weight: 600; }
-    .courses-slider {
-      display: flex; gap: 12px; overflow-x: auto; padding-bottom: 10px;
-      scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch;
-    }
-    .courses-slider::-webkit-scrollbar { height: 3px; }
-    .courses-slider::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
-    .course-card {
-      min-width: 148px; background: var(--card); border: 1px solid var(--border);
-      border-radius: 14px; padding: 16px; scroll-snap-align: start;
-    }
-    .course-badge {
-      display: inline-block; background: rgba(59, 130, 246, 0.15); color: var(--accent);
-      font-size: 0.72rem; font-weight: 600; padding: 3px 8px; border-radius: 6px; margin-bottom: 10px;
-    }
-    .course-card h4 { font-size: 0.95rem; margin-bottom: 4px; }
-    .course-card p { font-size: 0.8rem; color: var(--muted); }
-
+    .hero-sub { color: var(--muted); font-size: 0.98rem; line-height: 1.55; max-width: 340px; margin: 0 auto; }
     .auth-card {
       background: var(--card); border: 1px solid var(--border);
-      border-radius: 18px; padding: 24px 20px;
-      box-shadow: 0 12px 40px rgba(0,0,0,0.25);
+      border-radius: 18px; padding: 24px 20px; box-shadow: 0 12px 40px rgba(0,0,0,0.25);
     }
-
     .top-bar {
       display: flex; justify-content: space-between; align-items: center;
       padding: 14px 16px; border-bottom: 1px solid var(--border);
-      background: rgba(15, 22, 35, 0.85); backdrop-filter: blur(12px);
+      background: rgba(15,22,35,0.85); backdrop-filter: blur(12px);
       position: sticky; top: 0; z-index: 50;
     }
     body.light .top-bar { background: rgba(255,255,255,0.9); }
-    .logo {
-      font-weight: 700; font-size: 1.1rem; display: flex; align-items: center; gap: 8px;
-    }
+    .logo { font-weight: 700; font-size: 1.1rem; display: flex; align-items: center; gap: 8px; }
     .logo img { width: 32px; height: 32px; border-radius: 8px; }
-    .logo span {
-      background: linear-gradient(135deg, #3b82f6, #f97316);
-      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-    }
-    .top-actions { display: flex; align-items: center; gap: 10px; }
-    .theme-btn, .logout-btn {
-      background: var(--card); border: 1px solid var(--border); color: var(--text);
-      border-radius: 10px; font-size: 14px; cursor: pointer;
-    }
-    .theme-btn {
-      width: 40px; height: 40px; display: flex; align-items: center;
-      justify-content: center; font-size: 18px; padding: 0;
-    }
-    .logout-btn { padding: 8px 14px; }
-
-    .container { max-width: 560px; margin: 0 auto; padding: 24px 16px 40px; }
+    .logo span { background: linear-gradient(135deg, #3b82f6, #f97316); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .container { max-width: 560px; margin: 0 auto; padding: 24px 16px 100px; }
     .hero { text-align: center; margin-bottom: 28px; }
     .hero h1 { font-size: 1.85rem; font-weight: 700; margin-bottom: 8px; }
     .hero h1 .highlight { color: var(--accent); }
     .hero p { color: var(--muted); font-size: 0.95rem; }
     .user-greeting {
       display: inline-block; background: var(--card); border: 1px solid var(--border);
-      padding: 6px 14px; border-radius: 20px; font-size: 0.85rem;
-      color: var(--muted); margin-bottom: 10px;
+      padding: 6px 14px; border-radius: 20px; font-size: 0.85rem; color: var(--muted); margin-bottom: 10px;
     }
-
-    .dashboard {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 12px;
-      margin-bottom: 24px;
-    }
+    .dashboard { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 24px; }
     .stat-card {
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: 14px;
-      padding: 16px;
-      text-align: center;
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 14px; padding: 16px; text-align: center;
     }
-    .stat-value {
-      font-size: 1.6rem;
-      font-weight: 700;
-      color: var(--accent);
-      margin-bottom: 4px;
-    }
-    .stat-label {
-      font-size: 0.8rem;
-      color: var(--muted);
-    }
+    .stat-value { font-size: 1.6rem; font-weight: 700; color: var(--accent); margin-bottom: 4px; }
+    .stat-label { font-size: 0.8rem; color: var(--muted); }
     .stat-card.live .stat-value { color: #22c55e; }
     .stat-card.online .stat-value { color: #f97316; }
-
     .create-box {
       background: var(--card); border: 1px solid var(--border);
       border-radius: 16px; padding: 20px; margin-bottom: 28px;
     }
     .create-box h2 { font-size: 1.05rem; margin-bottom: 14px; }
-    .time-label {
-      font-size: 0.85rem; color: var(--muted); margin-bottom: 4px; margin-top: 8px;
-    }
-
-    input, textarea {
+    .time-label { font-size: 0.85rem; color: var(--muted); margin-bottom: 4px; margin-top: 8px; }
+    input, textarea, select {
       width: 100%; background: var(--input); color: var(--text);
       border: 1px solid var(--border); padding: 12px 14px;
       border-radius: 10px; font-size: 15px; margin-bottom: 10px;
     }
-    input:focus, textarea:focus {
-      outline: none; border-color: var(--primary);
-      box-shadow: 0 0 0 3px var(--primary-glow);
+    input:focus, textarea:focus, select:focus {
+      outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-glow);
     }
-
     .primary-btn {
       background: linear-gradient(135deg, #3b82f6, #2563eb);
       color: white; border: none; padding: 13px 20px; border-radius: 11px;
       font-size: 15px; font-weight: 600; width: 100%; margin-top: 4px; cursor: pointer;
     }
-
-    .section-title { font-size: 1.05rem; margin-bottom: 14px; color: var(--muted); }
     .session-card {
       background: var(--card); border: 1px solid var(--border);
       border-radius: 16px; padding: 18px; margin-bottom: 14px;
@@ -300,145 +121,76 @@
       padding: 8px 14px; border-radius: 8px; font-size: 13px; font-weight: 500; margin: 0;
     }
     .empty { text-align: center; color: var(--muted); padding: 30px 0; }
-
     .btn-notify { background: #64748b !important; }
     .btn-notify.enabled { background: #22c55e !important; }
-
     .online-dot {
-      display: inline-block;
-      width: 8px;
-      height: 8px;
-      background: #22c55e;
-      border-radius: 50%;
-      margin-right: 6px;
-      box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.3);
+      display: inline-block; width: 8px; height: 8px; background: #22c55e;
+      border-radius: 50%; margin-right: 6px; box-shadow: 0 0 0 2px rgba(34,197,94,0.3);
     }
-    .online-count {
-      font-size: 0.8rem;
-      color: #22c55e;
-      margin-top: 4px;
-    }
-    .chat-online {
-      font-size: 0.78rem;
-      color: #8696a0;
-      margin-top: 2px;
-    }
+    .online-count { font-size: 0.8rem; color: #22c55e; margin-top: 4px; }
+    .chat-online { font-size: 0.78rem; color: #8696a0; margin-top: 2px; }
     body.light .chat-online { color: #d1d5db; }
-
     .avatar {
-      width: 28px;
-      height: 28px;
-      border-radius: 50%;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 0.75rem;
-      font-weight: 600;
-      color: #ffffff;
-      flex-shrink: 0;
-      text-transform: uppercase;
+      width: 28px; height: 28px; border-radius: 50%; display: inline-flex;
+      align-items: center; justify-content: center; font-size: 0.75rem;
+      font-weight: 600; color: #fff; flex-shrink: 0; text-transform: uppercase;
     }
-    .avatar-sm {
-      width: 22px;
-      height: 22px;
-      font-size: 0.65rem;
-    }
-    .member-line {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      margin: 4px 0;
-    }
-    .message-header {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      margin-bottom: 4px;
-    }
-
-    .modal {
-      display: none; position: fixed; inset: 0; background: #000; z-index: 100;
-    }
+    .avatar-sm { width: 22px; height: 22px; font-size: 0.65rem; }
+    .member-line { display: flex; align-items: center; gap: 8px; margin: 4px 0; }
+    .message-header { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+    .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 100; }
     .chat-modal-content {
       height: 100%; max-width: 500px; margin: 0 auto;
       display: flex; flex-direction: column; background: #0b141a;
     }
     body.light .chat-modal-content { background: #efeae2; }
-
     .chat-header {
       padding: 10px 12px; background: #1f2c34;
       display: flex; align-items: center; gap: 12px; min-height: 56px;
     }
     body.light .chat-header { background: #008069; }
-    .chat-header h3 {
-      margin: 0;
-      font-size: 1.05rem;
-      font-weight: 500;
-      color: #e9edef;
-    }
+    .chat-header h3 { margin: 0; font-size: 1.05rem; font-weight: 500; color: #e9edef; }
     .chat-close {
       background: transparent; border: none; color: #aebac1;
       width: 40px; height: 40px; border-radius: 50%; font-size: 20px; cursor: pointer;
     }
     body.light .chat-close { color: #fff; }
-
     .chat-messages {
       flex: 1; overflow-y: auto; padding: 12px 10px 16px;
       display: flex; flex-direction: column; gap: 3px; background: #0b141a;
     }
     body.light .chat-messages { background: #efeae2; }
-
     .message {
       max-width: 75%; padding: 6px 9px 4px 9px;
       border-radius: 7.5px; font-size: 0.95rem; line-height: 1.35;
     }
-    .message.sent {
-      align-self: flex-end; background: #005c4b; color: #e9edef; border-top-right-radius: 0;
-    }
+    .message.sent { align-self: flex-end; background: #005c4b; color: #e9edef; border-top-right-radius: 0; }
     body.light .message.sent { background: #d9fdd3; color: #111b21; }
-    .message.received {
-      align-self: flex-start; background: #1f2c34; color: #e9edef; border-top-left-radius: 0;
-    }
+    .message.received { align-self: flex-start; background: #1f2c34; color: #e9edef; border-top-left-radius: 0; }
     body.light .message.received { background: #ffffff; color: #111b21; }
-
-    .message-name {
-      font-size: 0.78rem; font-weight: 500; color: #53bdeb; margin-bottom: 0;
-    }
+    .message-name { font-size: 0.78rem; font-weight: 500; color: #53bdeb; }
     body.light .message-name { color: #06cf9c; }
-
-    .message-meta {
-      display: flex; align-items: center; justify-content: flex-end; gap: 4px; margin-top: 2px;
-    }
+    .message-meta { display: flex; align-items: center; justify-content: flex-end; gap: 4px; margin-top: 2px; }
     .message-time { font-size: 0.68rem; color: #8696a0; }
     body.light .message-time { color: #667781; }
-
     .ticks { font-size: 14px; line-height: 1; letter-spacing: -3px; }
-    .ticks.delivered { color: #8696a0; }
     .ticks.read { color: #53bdeb; }
-    body.light .ticks.delivered { color: #667781; }
-    body.light .ticks.read { color: #53bdeb; }
-
     .chat-input-area {
       padding: 6px 8px 10px; background: #1f2c34;
       display: flex; gap: 8px; align-items: center;
     }
     body.light .chat-input-area { background: #f0f2f5; }
-
     .chat-input-area input {
       flex: 1; margin-bottom: 0; background: #2a3942; border: none;
       border-radius: 24px; padding: 11px 16px; color: #e9edef; font-size: 15px;
     }
     body.light .chat-input-area input { background: #ffffff; color: #111b21; }
-    .chat-input-area input::placeholder { color: #8696a0; }
     .chat-input-area input:focus { outline: none; box-shadow: none; }
-
     .chat-send-btn {
       background: #00a884; color: white; border: none;
       width: 46px; height: 46px; border-radius: 50%; font-size: 18px;
-      cursor: pointer; flex-shrink: 0;
-      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; flex-shrink: 0; display: flex; align-items: center; justify-content: center;
     }
-
     .modal-content {
       background: var(--card); padding: 22px; border-radius: 18px;
       max-width: 480px; margin: 50px auto 0; border: 1px solid var(--border);
@@ -451,40 +203,49 @@
     .btn-primary { background: var(--primary); color: white; }
     .btn-cancel { background: var(--border); color: var(--text); }
     .btn-danger { background: var(--danger); color: white; }
-    .error-text { color: #f87171; font-size: 0.88rem; margin-bottom: 10px; display: none; }
-
-    .auth-toggle {
-      text-align: center; margin-top: 18px; color: var(--muted); font-size: 0.93rem;
-    }
+    .auth-toggle { text-align: center; margin-top: 18px; color: var(--muted); font-size: 0.93rem; }
     .auth-toggle span { color: var(--primary); cursor: pointer; }
     #app-screen { display: none; }
-
     .password-wrapper { position: relative; margin-bottom: 10px; }
     .password-wrapper input { margin-bottom: 0; padding-right: 44px; }
     .toggle-password {
       position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
       background: none; border: none; color: var(--muted); font-size: 17px;
-      padding: 0; width: 28px; height: 28px; display: flex;
-      align-items: center; justify-content: center; cursor: pointer;
+      padding: 0; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; cursor: pointer;
     }
-
     .app-footer {
-      text-align: center;
-      padding: 28px 16px 20px;
-      font-size: 0.82rem;
-      color: var(--muted);
-      letter-spacing: 0.2px;
+      text-align: center; padding: 28px 16px 20px;
+      font-size: 0.82rem; color: var(--muted); letter-spacing: 0.2px;
     }
-    .app-footer span {
-      color: #60a5fa;
-      font-weight: 600;
+    .app-footer span { color: #60a5fa; font-weight: 600; }
+    body.light .app-footer span { color: #2563eb; }
+    .settings-info {
+      background: var(--input); border: 1px solid var(--border);
+      border-radius: 10px; padding: 12px 14px; margin-bottom: 12px;
+      font-size: 0.9rem; color: var(--muted);
     }
-    body.light .app-footer span {
-      color: #2563eb;
+    .bottom-nav {
+      position: fixed; bottom: 0; left: 0; right: 0;
+      background: var(--card); border-top: 1px solid var(--border);
+      display: flex; justify-content: space-around; align-items: center;
+      padding: 8px 0 calc(8px + env(safe-area-inset-bottom)); z-index: 90;
     }
-
+    .nav-item {
+      flex: 1; display: flex; flex-direction: column; align-items: center;
+      gap: 3px; background: none; border: none; color: var(--muted);
+      font-size: 0.7rem; cursor: pointer; padding: 6px 0;
+    }
+    .nav-item.active { color: var(--accent); }
+    .nav-item .nav-icon { font-size: 1.35rem; line-height: 1; }
+    .tab-page { display: none; }
+    .tab-page.active { display: block; }
+    .theme-btn {
+      background: var(--card); border: 1px solid var(--border); color: var(--text);
+      border-radius: 10px; width: 40px; height: 40px; display: flex;
+      align-items: center; justify-content: center; font-size: 18px; cursor: pointer;
+    }
     #toast {
-      position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%);
+      position: fixed; bottom: 90px; left: 50%; transform: translateX(-50%);
       background: var(--card); color: var(--text); padding: 13px 20px;
       border-radius: 12px; border: 1px solid var(--border); font-size: 14px;
       z-index: 999; display: none; box-shadow: 0 10px 30px rgba(0,0,0,0.35);
@@ -500,71 +261,17 @@
   </style>
 </head>
 <body>
-
   <div id="auth-screen">
     <div class="auth-container">
       <div class="brand">
-        <img src="logo.png" alt="StudySched" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex'">
+        <img src="logo.png" alt="StudySched" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
         <div class="logo-fallback" style="display:none;"></div>
         <div class="brand-text">Study<span>Sched</span></div>
       </div>
-
       <div class="auth-hero">
         <h1>Study smarter.<br><span class="blue">Achieve more.</span></h1>
-        <p class="hero-sub">
-          Join focused study groups, plan your sessions, and stay consistent with real-time collaboration.
-        </p>
+        <p class="hero-sub">Join focused study groups, plan your sessions, and stay consistent with real-time collaboration.</p>
       </div>
-
-      <div class="progress-card">
-        <div class="progress-label">03  STUDY PROGRESS</div>
-        <h3>Your weekly focus</h3>
-        <p class="progress-desc">Track how consistent you are this week.</p>
-        <div class="bars">
-          <div class="bar-item"><div class="bar-value">2h</div><div class="bar" style="height:25%"></div><span>Mon</span></div>
-          <div class="bar-item"><div class="bar-value">3h</div><div class="bar" style="height:40%"></div><span>Tue</span></div>
-          <div class="bar-item"><div class="bar-value">4h</div><div class="bar" style="height:55%"></div><span>Wed</span></div>
-          <div class="bar-item"><div class="bar-value">3.5h</div><div class="bar" style="height:48%"></div><span>Thu</span></div>
-          <div class="bar-item"><div class="bar-value">5h</div><div class="bar" style="height:70%"></div><span>Fri</span></div>
-          <div class="bar-item"><div class="bar-value">6h</div><div class="bar" style="height:85%"></div><span>Sat</span></div>
-          <div class="bar-item"><div class="bar-value">7h</div><div class="bar active" style="height:100%"></div><span>Sun</span></div>
-        </div>
-      </div>
-
-      <div class="overlay-card">
-        <img src="logo.png" alt="StudySched" class="overlay-logo" onerror="this.style.display='none'">
-        <div class="overlay-content">
-          <h3>Study with peace of mind</h3>
-          <p>No complicated tools. No distractions. Just focused sessions and real progress with your group.</p>
-        </div>
-      </div>
-
-      <div class="courses-section">
-        <h3 class="courses-title">Popular Study Tracks</h3>
-        <div class="courses-slider">
-          <div class="course-card">
-            <div class="course-badge">INS 204</div>
-            <h4>Systems Analysis and Design</h4>
-            <p>12 active members</p>
-          </div>
-          <div class="course-card">
-            <div class="course-badge">MTH 201</div>
-            <h4>Mathematical Methods I</h4>
-            <p>8 active members</p>
-          </div>
-          <div class="course-card">
-            <div class="course-badge">CSC 301</div>
-            <h4>Introduction to Computer Systems</h4>
-            <p>15 active members</p>
-          </div>
-          <div class="course-card">
-            <div class="course-badge">GST 102</div>
-            <h4>Use of English II</h4>
-            <p>6 active members</p>
-          </div>
-        </div>
-      </div>
-
       <div class="auth-card">
         <div id="login-form">
           <h2 style="margin-bottom:14px;">Login</h2>
@@ -576,11 +283,49 @@
           <button class="primary-btn" onclick="login()">Login</button>
           <div class="auth-toggle">Don't have an account? <span onclick="showSignup()">Sign up</span></div>
         </div>
-
         <div id="signup-form" style="display:none;">
           <h2 style="margin-bottom:14px;">Create Account</h2>
           <input type="text" id="signup-name" placeholder="Your name">
           <input type="email" id="signup-email" placeholder="Email">
+          <select id="signup-dept">
+            <option value="">Select Department</option>
+            <optgroup label="SICT">
+              <option value="Computer Science">Computer Science</option>
+              <option value="Cyber Security">Cyber Security</option>
+              <option value="Information Technology">Information Technology</option>
+              <option value="Software Engineering">Software Engineering</option>
+            </optgroup>
+            <optgroup label="SEET / SESET">
+              <option value="Electrical and Electronics Engineering">Electrical and Electronics Engineering</option>
+              <option value="Computer Engineering">Computer Engineering</option>
+              <option value="Mechanical Engineering">Mechanical Engineering</option>
+              <option value="Civil Engineering">Civil Engineering</option>
+              <option value="Chemical Engineering">Chemical Engineering</option>
+              <option value="Petroleum Engineering">Petroleum Engineering</option>
+              <option value="Mechatronics Engineering">Mechatronics Engineering</option>
+            </optgroup>
+            <optgroup label="SOPS">
+              <option value="Mathematics">Mathematics</option>
+              <option value="Physics">Physics</option>
+              <option value="Chemistry">Chemistry</option>
+              <option value="Statistics">Statistics</option>
+            </optgroup>
+            <optgroup label="SOBS">
+              <option value="Biochemistry">Biochemistry</option>
+              <option value="Microbiology">Microbiology</option>
+              <option value="Biotechnology">Biotechnology</option>
+              <option value="Biology">Biology</option>
+            </optgroup>
+            <option value="Other">Other</option>
+          </select>
+          <select id="signup-level">
+            <option value="">Select Level</option>
+            <option value="100">100 Level</option>
+            <option value="200">200 Level</option>
+            <option value="300">300 Level</option>
+            <option value="400">400 Level</option>
+            <option value="500">500 Level</option>
+          </select>
           <div class="password-wrapper">
             <input type="password" id="signup-password" placeholder="Password (min 6 characters)">
             <button type="button" class="toggle-password" onclick="togglePassword('signup-password', this)">👁</button>
@@ -589,16 +334,10 @@
           <div class="auth-toggle">Already have an account? <span onclick="showLogin()">Login</span></div>
         </div>
       </div>
-
       <div style="text-align:center; margin-top:22px;">
-        <button class="theme-btn" onclick="toggleTheme()" style="margin:0 auto;">
-          <span id="theme-icon-auth">🌙</span>
-        </button>
+        <button class="theme-btn" onclick="toggleTheme()" style="margin:0 auto;"><span id="theme-icon-auth">🌙</span></button>
       </div>
-
-      <div class="app-footer">
-        Created by <span>Christian</span> · © 2026 All rights reserved.
-      </div>
+      <div class="app-footer">Created by <span>Christian</span> · © 2026 All rights reserved.</div>
     </div>
   </div>
 
@@ -608,54 +347,132 @@
         <img src="logo.png" alt="logo" onerror="this.style.display='none'">
         <span>StudySched</span>
       </div>
-      <div class="top-actions">
-        <button class="theme-btn" onclick="toggleTheme()"><span id="theme-icon">🌙</span></button>
-        <button class="logout-btn" onclick="logout()">Log out</button>
-      </div>
     </div>
 
     <div class="container">
-      <div class="hero">
-        <div class="user-greeting" id="user-name">Hi there</div>
-        <h1>Ready to <span class="highlight">focus</span>?</h1>
-        <p>Create a study session and invite others to join in real time.</p>
+      <!-- HOME -->
+      <div id="tab-home" class="tab-page active">
+        <div class="hero">
+          <div class="user-greeting" id="user-name">Hi there</div>
+          <h1>Ready to <span class="highlight">focus</span>?</h1>
+          <p>Create a study session and invite others to join.</p>
+        </div>
+        <div class="dashboard">
+          <div class="stat-card"><div class="stat-value" id="stat-total">0</div><div class="stat-label">Total Sessions</div></div>
+          <div class="stat-card"><div class="stat-value" id="stat-joined">0</div><div class="stat-label">Joined</div></div>
+          <div class="stat-card live"><div class="stat-value" id="stat-live">0</div><div class="stat-label">Live Now</div></div>
+          <div class="stat-card online"><div class="stat-value" id="stat-online">0</div><div class="stat-label">Online</div></div>
+        </div>
+        <div class="create-box">
+          <h2>Create Study Session</h2>
+          <input type="text" id="session-title" placeholder="Session title (e.g. CYB 201 Revision)">
+          <input type="text" id="session-course" placeholder="Course code (optional, e.g. CYB 201)">
+          <div class="time-label">Start time</div>
+          <input type="datetime-local" id="session-time">
+          <div class="time-label">End time</div>
+          <input type="datetime-local" id="session-end-time">
+          <button class="primary-btn" onclick="createSession()">Create Session</button>
+        </div>
       </div>
 
-      <div class="dashboard" id="dashboard">
-        <div class="stat-card">
-          <div class="stat-value" id="stat-total">0</div>
-          <div class="stat-label">Total Sessions</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-value" id="stat-joined">0</div>
-          <div class="stat-label">Joined</div>
-        </div>
-        <div class="stat-card live">
-          <div class="stat-value" id="stat-live">0</div>
-          <div class="stat-label">Live Now</div>
-        </div>
-        <div class="stat-card online">
-          <div class="stat-value" id="stat-online">0</div>
-          <div class="stat-label">Online</div>
-        </div>
+      <!-- SESSIONS -->
+      <div id="tab-sessions" class="tab-page">
+        <h2 style="margin-bottom:14px;">Upcoming Sessions</h2>
+        <input type="text" id="session-search" placeholder="Search sessions..." oninput="renderSessions()" style="margin-bottom:14px;">
+        <div id="sessions"><p class="empty">Loading...</p></div>
       </div>
 
-      <div class="create-box">
-        <h2>Create Study Session</h2>
-        <input type="text" id="session-title" placeholder="Session title (e.g. Maths)">
-        <div class="time-label">Start time</div>
-        <input type="datetime-local" id="session-time">
-        <div class="time-label">End time</div>
-        <input type="datetime-local" id="session-end-time">
-        <button class="primary-btn" onclick="createSession()">Create Session</button>
+      <!-- CHATS -->
+      <div id="tab-chats" class="tab-page">
+        <h2 style="margin-bottom:14px;">My Group Chats</h2>
+        <div id="my-chats"><p class="empty">Join a session to see its chat here.</p></div>
       </div>
 
-      <div class="section-title">Upcoming Sessions</div>
-      <div id="sessions"><p class="empty">Loading...</p></div>
-
-      <div class="app-footer">
-        Created by <span>Christian</span> · © 2026 All rights reserved.
+      <!-- PROFILE (theme button lives here) -->
+      <div id="tab-profile" class="tab-page">
+        <h2 style="margin-bottom:18px;">Profile</h2>
+        <div class="create-box">
+          <div style="text-align:center;margin-bottom:16px;">
+            <div id="profile-avatar" class="avatar" style="width:64px;height:64px;font-size:1.5rem;margin:0 auto 10px;"></div>
+            <div style="font-size:1.2rem;font-weight:600;" id="profile-name">—</div>
+            <div style="color:var(--muted);font-size:0.9rem;" id="profile-email">—</div>
+          </div>
+          <div class="meta">Department: <strong id="profile-dept">—</strong></div>
+          <div class="meta">Level: <strong id="profile-level">—</strong></div>
+          <button class="primary-btn" onclick="openSettings()" style="margin-top:16px;">Edit Department / Level</button>
+          <button class="primary-btn" onclick="toggleTheme()" style="margin-top:10px;background:var(--border);color:var(--text);">
+            <span id="theme-icon">🌙</span> Toggle Theme
+          </button>
+          <button class="primary-btn" onclick="logout()" style="margin-top:10px;background:#ef4444;">Log out</button>
+        </div>
+        <div class="app-footer">Created by <span>Christian</span> · © 2026 All rights reserved.</div>
       </div>
+    </div>
+
+    <div class="bottom-nav">
+      <button class="nav-item active" onclick="switchTab('home')" id="nav-home">
+        <span class="nav-icon">🏠</span><span>Home</span>
+      </button>
+      <button class="nav-item" onclick="switchTab('sessions')" id="nav-sessions">
+        <span class="nav-icon">📅</span><span>Sessions</span>
+      </button>
+      <button class="nav-item" onclick="switchTab('chats')" id="nav-chats">
+        <span class="nav-icon">💬</span><span>Chats</span>
+      </button>
+      <button class="nav-item" onclick="switchTab('profile')" id="nav-profile">
+        <span class="nav-icon">👤</span><span>Profile</span>
+      </button>
+    </div>
+  </div>
+
+  <div id="settings-modal" class="modal">
+    <div class="modal-content">
+      <h3>Settings</h3>
+      <div class="settings-info">Name: <strong id="settings-name">—</strong></div>
+      <label class="time-label">Department</label>
+      <select id="settings-dept">
+        <option value="">Select Department</option>
+        <optgroup label="SICT">
+          <option value="Computer Science">Computer Science</option>
+          <option value="Cyber Security">Cyber Security</option>
+          <option value="Information Technology">Information Technology</option>
+          <option value="Software Engineering">Software Engineering</option>
+        </optgroup>
+        <optgroup label="SEET / SESET">
+          <option value="Electrical and Electronics Engineering">Electrical and Electronics Engineering</option>
+          <option value="Computer Engineering">Computer Engineering</option>
+          <option value="Mechanical Engineering">Mechanical Engineering</option>
+          <option value="Civil Engineering">Civil Engineering</option>
+          <option value="Chemical Engineering">Chemical Engineering</option>
+          <option value="Petroleum Engineering">Petroleum Engineering</option>
+          <option value="Mechatronics Engineering">Mechatronics Engineering</option>
+        </optgroup>
+        <optgroup label="SOPS">
+          <option value="Mathematics">Mathematics</option>
+          <option value="Physics">Physics</option>
+          <option value="Chemistry">Chemistry</option>
+          <option value="Statistics">Statistics</option>
+        </optgroup>
+        <optgroup label="SOBS">
+          <option value="Biochemistry">Biochemistry</option>
+          <option value="Microbiology">Microbiology</option>
+          <option value="Biotechnology">Biotechnology</option>
+          <option value="Biology">Biology</option>
+        </optgroup>
+        <option value="Other">Other</option>
+      </select>
+      <label class="time-label">Level</label>
+      <select id="settings-level">
+        <option value="">Select Level</option>
+        <option value="100">100 Level</option>
+        <option value="200">200 Level</option>
+        <option value="300">300 Level</option>
+        <option value="400">400 Level</option>
+        <option value="500">500 Level</option>
+      </select>
+      <br>
+      <button class="btn btn-primary" onclick="saveSettings()">Save Changes</button>
+      <button class="btn btn-cancel" onclick="closeSettings()">Cancel</button>
     </div>
   </div>
 
@@ -676,41 +493,21 @@
     </div>
   </div>
 
-  <div id="join-modal" class="modal">
-    <div class="modal-content">
-      <h3>Join Session</h3>
-      <input type="text" id="join-name" placeholder="Enter your name">
-      <div id="join-error" class="error-text">This name is already in the session.</div>
-      <br>
-      <button class="btn btn-primary" onclick="confirmJoin()">Join</button>
-      <button class="btn btn-cancel" onclick="closeJoin()">Cancel</button>
-    </div>
-  </div>
-
   <div id="delete-modal" class="modal">
     <div class="modal-content">
       <h3>Delete Session</h3>
-      <p style="margin-bottom: 20px; color: var(--muted);">Are you sure you want to delete this session? This cannot be undone.</p>
+      <p style="margin-bottom:20px;color:var(--muted);">Are you sure you want to delete this session?</p>
       <button class="btn btn-danger" onclick="confirmDelete()">Delete</button>
       <button class="btn btn-cancel" onclick="closeDelete()">Cancel</button>
     </div>
   </div>
 
   <div id="toast"></div>
-
   <script src="app.js"></script>
-
-  <!-- Register Service Worker for PWA -->
   <script>
     if ("serviceWorker" in navigator) {
       window.addEventListener("load", function() {
-        navigator.serviceWorker.register("/sw.js")
-          .then(function() {
-            console.log("Service Worker registered");
-          })
-          .catch(function(err) {
-            console.log("Service Worker failed:", err);
-          });
+        navigator.serviceWorker.register("/sw.js").catch(function() {});
       });
     }
   </script>
