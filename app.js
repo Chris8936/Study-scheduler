@@ -111,7 +111,7 @@ function renderMyChats() {
   if (!container) return;
   const currentName = (currentUser && currentUser.user_metadata && currentUser.user_metadata.name) || "";
   const joined = sessions.filter(function(s) {
-    return s.members && s.members.some(function(m) {
+    return Array.isArray(s.members) && s.members.some(function(m) {
       return normalizeName(m) === normalizeName(currentName);
     });
   });
@@ -393,7 +393,7 @@ function setupGlobalMessageListener() {
       table: "messages"
     }, function(payload) {
       const msg = payload.new;
-      if (msg.user_name === "system") return; // don't toast system messages
+      if (msg.user_name === "system") return;
       const currentName = (currentUser.user_metadata && currentUser.user_metadata.name) || "";
       if (msg.user_name && normalizeName(msg.user_name) === normalizeName(currentName)) return;
       const session = sessions.find(function(s) { return s.id === msg.session_id; });
@@ -684,7 +684,6 @@ async function confirmJoinDirect(sessionId) {
     return;
   }
 
-  // WhatsApp-style system message
   await supabaseClient.from("messages").insert([{
     session_id: sessionId,
     user_name: "system",
@@ -714,7 +713,6 @@ async function leaveSession(id) {
     return;
   }
 
-  // WhatsApp-style system message
   await supabaseClient.from("messages").insert([{
     session_id: id,
     user_name: "system",
@@ -722,6 +720,10 @@ async function leaveSession(id) {
     reply_to: null,
     reactions: "{}"
   }]);
+
+  if (currentChatSessionId === id) {
+    closeChat();
+  }
 
   showToast("You left the session");
 }
@@ -838,13 +840,12 @@ async function pickReaction(emoji) {
       reactions = {};
     }
 
-    // Check if user already had this same emoji
     let alreadyHadThis = false;
     if (reactions[emoji] && reactions[emoji].indexOf(myName) >= 0) {
       alreadyHadThis = true;
     }
 
-    // WhatsApp rule: one reaction per person — remove from all emojis first
+    // One reaction per person
     Object.keys(reactions).forEach(function(key) {
       if (!Array.isArray(reactions[key])) return;
       reactions[key] = reactions[key].filter(function(n) { return n !== myName; });
@@ -939,25 +940,35 @@ async function openChat(sessionId) {
     showToast("Please login first", "error");
     return;
   }
+
+  // Fresh members list
+  await loadSessions();
+
   const currentName = (currentUser.user_metadata && currentUser.user_metadata.name) || "";
   const session = sessions.find(function(s) { return s.id === sessionId; });
+
   if (!session) {
     showToast("Session not found", "error");
     return;
   }
-  const isMember = session.members && session.members.some(function(m) {
+
+  const isMember = Array.isArray(session.members) && session.members.some(function(m) {
     return normalizeName(m) === normalizeName(currentName);
   });
+
   if (!isMember) {
     showToast("Join the session first to access the group chat", "error");
     return;
   }
+
   currentChatSessionId = sessionId;
   cancelReply();
   hideMsgActions();
   document.getElementById("chat-title").textContent = session.title || "Group Chat";
   document.getElementById("chat-modal").style.display = "block";
-  document.getElementById("chat-messages").innerHTML = "<p style='text-align:center;color:#8696a0;padding:20px;'>Loading messages...</p>";
+  document.getElementById("chat-messages").innerHTML =
+    "<p style='text-align:center;color:#8696a0;padding:20px;'>Loading messages...</p>";
+
   await trackSessionPresence(sessionId);
   updateChatOnlineStatus();
   await loadMessages(sessionId);
@@ -986,14 +997,14 @@ async function loadMessages(sessionId) {
     .eq("session_id", sessionId)
     .order("created_at", { ascending: true });
   if (error) {
-    document.getElementById("chat-messages").innerHTML = "<p style='text-align:center;color:#f87171;'>Error loading messages</p>";
+    document.getElementById("chat-messages").innerHTML =
+      "<p style='text-align:center;color:#f87171;'>Error loading messages</p>";
     return;
   }
   renderMessages(data || []);
 }
 
 function buildMessageHtml(msg, currentName) {
-  // WhatsApp-style system message
   if (msg.user_name === "system") {
     return {
       isMine: false,
