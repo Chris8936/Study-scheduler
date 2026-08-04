@@ -141,7 +141,7 @@
     .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 100; }
     .chat-modal-content {
       height: 100%; max-width: 500px; margin: 0 auto;
-      display: flex; flex-direction: column; background: #0b141a;
+      display: flex; flex-direction: column; background: #0b141a; position: relative;
     }
     body.light .chat-modal-content { background: #efeae2; }
     .chat-header {
@@ -163,11 +163,35 @@
     .message {
       max-width: 75%; padding: 6px 9px 4px 9px;
       border-radius: 7.5px; font-size: 0.95rem; line-height: 1.35;
+      position: relative; cursor: pointer;
     }
     .message.sent { align-self: flex-end; background: #005c4b; color: #e9edef; border-top-right-radius: 0; }
     body.light .message.sent { background: #d9fdd3; color: #111b21; }
     .message.received { align-self: flex-start; background: #1f2c34; color: #e9edef; border-top-left-radius: 0; }
     body.light .message.received { background: #ffffff; color: #111b21; }
+    .message.selected { outline: 2px solid rgba(0,168,132,0.55); }
+    .message.system {
+      align-self: center;
+      max-width: 90%;
+      background: transparent !important;
+      color: #8696a0;
+      font-size: 0.78rem;
+      text-align: center;
+      padding: 4px 12px;
+      margin: 6px 0;
+      border-radius: 8px;
+      cursor: default;
+    }
+    body.light .message.system { color: #667781; }
+    .message.system .system-pill {
+      display: inline-block;
+      background: rgba(0,0,0,0.15);
+      padding: 4px 12px;
+      border-radius: 8px;
+    }
+    body.light .message.system .system-pill {
+      background: rgba(0,0,0,0.06);
+    }
     .message-name { font-size: 0.78rem; font-weight: 500; color: #53bdeb; }
     body.light .message-name { color: #06cf9c; }
     .message-meta { display: flex; align-items: center; justify-content: flex-end; gap: 4px; margin-top: 2px; }
@@ -175,9 +199,35 @@
     body.light .message-time { color: #667781; }
     .ticks { font-size: 14px; line-height: 1; letter-spacing: -3px; }
     .ticks.read { color: #53bdeb; }
+    .message-reply-quote {
+      background: rgba(0,0,0,0.2);
+      border-left: 3px solid #00a884;
+      padding: 4px 8px; margin-bottom: 4px; border-radius: 4px;
+      font-size: 0.8rem; color: #8696a0;
+    }
+    body.light .message-reply-quote { background: rgba(0,0,0,0.06); color: #667781; }
+    .msg-reactions { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
+    .msg-reaction {
+      background: rgba(255,255,255,0.12);
+      border-radius: 12px; padding: 2px 8px; font-size: 0.8rem;
+    }
+    body.light .msg-reaction { background: rgba(0,0,0,0.08); }
+    .msg-actions {
+      display: none; position: fixed;
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.35);
+      z-index: 200; min-width: 180px; overflow: hidden;
+    }
+    .msg-actions.show { display: block; }
+    .msg-actions button {
+      display: block; width: 100%; text-align: left;
+      background: none; border: none; color: var(--text);
+      padding: 12px 16px; font-size: 0.9rem; cursor: pointer;
+    }
+    .msg-actions button:active { background: rgba(59,130,246,0.15); }
+    .msg-actions button.danger { color: #ef4444; }
     .chat-input-area {
-      padding: 6px 8px 10px; background: #1f2c34;
-      display: flex; gap: 8px; align-items: center;
+      background: #1f2c34; display: flex; flex-direction: column; align-items: stretch; gap: 0;
     }
     body.light .chat-input-area { background: #f0f2f5; }
     .chat-input-area input {
@@ -348,9 +398,7 @@
         <span>StudySched</span>
       </div>
     </div>
-
     <div class="container">
-      <!-- HOME -->
       <div id="tab-home" class="tab-page active">
         <div class="hero">
           <div class="user-greeting" id="user-name">Hi there</div>
@@ -374,21 +422,15 @@
           <button class="primary-btn" onclick="createSession()">Create Session</button>
         </div>
       </div>
-
-      <!-- SESSIONS -->
       <div id="tab-sessions" class="tab-page">
         <h2 style="margin-bottom:14px;">Upcoming Sessions</h2>
         <input type="text" id="session-search" placeholder="Search sessions..." oninput="renderSessions()" style="margin-bottom:14px;">
         <div id="sessions"><p class="empty">Loading...</p></div>
       </div>
-
-      <!-- CHATS -->
       <div id="tab-chats" class="tab-page">
         <h2 style="margin-bottom:14px;">My Group Chats</h2>
         <div id="my-chats"><p class="empty">Join a session to see its chat here.</p></div>
       </div>
-
-      <!-- PROFILE (theme button lives here) -->
       <div id="tab-profile" class="tab-page">
         <h2 style="margin-bottom:18px;">Profile</h2>
         <div class="create-box">
@@ -408,7 +450,6 @@
         <div class="app-footer">Created by <span>Christian</span> · © 2026 All rights reserved.</div>
       </div>
     </div>
-
     <div class="bottom-nav">
       <button class="nav-item active" onclick="switchTab('home')" id="nav-home">
         <span class="nav-icon">🏠</span><span>Home</span>
@@ -486,9 +527,35 @@
         </div>
       </div>
       <div class="chat-messages" id="chat-messages"></div>
+
+      <div id="msg-actions" class="msg-actions">
+        <div style="display:flex;gap:4px;padding:10px 8px;justify-content:center;border-bottom:1px solid var(--border);flex-wrap:wrap;">
+          <button type="button" onclick="pickReaction('👍')" style="font-size:1.4rem;padding:6px 8px;background:none;border:none;cursor:pointer;">👍</button>
+          <button type="button" onclick="pickReaction('❤️')" style="font-size:1.4rem;padding:6px 8px;background:none;border:none;cursor:pointer;">❤️</button>
+          <button type="button" onclick="pickReaction('😂')" style="font-size:1.4rem;padding:6px 8px;background:none;border:none;cursor:pointer;">😂</button>
+          <button type="button" onclick="pickReaction('😮')" style="font-size:1.4rem;padding:6px 8px;background:none;border:none;cursor:pointer;">😮</button>
+          <button type="button" onclick="pickReaction('😢')" style="font-size:1.4rem;padding:6px 8px;background:none;border:none;cursor:pointer;">😢</button>
+          <button type="button" onclick="pickReaction('🙏')" style="font-size:1.4rem;padding:6px 8px;background:none;border:none;cursor:pointer;">🙏</button>
+        </div>
+        <button type="button" onclick="actionReply()">↩ Reply</button>
+        <button type="button" onclick="actionCopy()">📋 Copy</button>
+        <button type="button" class="danger" id="msg-delete-btn" onclick="actionDelete()">🗑 Delete</button>
+      </div>
+
       <div class="chat-input-area">
-        <input type="text" id="chat-input" placeholder="Type a message" onkeypress="if(event.key==='Enter') sendMessage()">
-        <button class="chat-send-btn" onclick="sendMessage()">➤</button>
+        <div id="reply-bar" style="display:none;padding:8px 12px;background:#1f2c34;border-left:4px solid #00a884;margin:0 8px 4px;border-radius:0 8px 8px 0;">
+          <div style="display:flex;justify-content:space-between;align-items:center;">
+            <div style="flex:1;overflow:hidden;">
+              <div id="reply-bar-name" style="font-size:0.78rem;color:#00a884;font-weight:600;"></div>
+              <div id="reply-bar-text" style="font-size:0.8rem;color:#8696a0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></div>
+            </div>
+            <button onclick="cancelReply()" style="background:none;border:none;color:#8696a0;font-size:18px;padding:4px 8px;cursor:pointer;">✕</button>
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;padding:6px 8px 10px;">
+          <input type="text" id="chat-input" placeholder="Type a message" onkeypress="if(event.key==='Enter') sendMessage()">
+          <button class="chat-send-btn" onclick="sendMessage()">➤</button>
+        </div>
       </div>
     </div>
   </div>
@@ -499,6 +566,15 @@
       <p style="margin-bottom:20px;color:var(--muted);">Are you sure you want to delete this session?</p>
       <button class="btn btn-danger" onclick="confirmDelete()">Delete</button>
       <button class="btn btn-cancel" onclick="closeDelete()">Cancel</button>
+    </div>
+  </div>
+
+  <div id="delete-msg-modal" class="modal">
+    <div class="modal-content">
+      <h3>Delete Message</h3>
+      <p style="margin-bottom:20px;color:var(--muted);">Delete this message for everyone?</p>
+      <button class="btn btn-danger" onclick="confirmDeleteMessage()">Delete</button>
+      <button class="btn btn-cancel" onclick="closeDeleteMessage()">Cancel</button>
     </div>
   </div>
 
